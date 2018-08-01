@@ -7,7 +7,8 @@ import (
 )
 
 type Config struct {
-	Addr string `long:"rest-addr" env:"REST_ADDR" default:"localhost:8080" description:"rest api address"`
+	Addr      string `long:"rest-addr" env:"REST_ADDR" default:"localhost:8080" description:"rest api address"`
+	RabbitURL string `long:"rabbit-url" env:"RABBIT_URL" default:"amqp://guest:guest@localhost:5672" description:"rabbitmq url"`
 }
 
 func Parse() *Config {

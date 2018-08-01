@@ -4,11 +4,13 @@ import (
 	"time"
 
 	"github.com/go-chi/chi"
+	"github.com/streadway/amqp"
 
 	"github.com/sknv/microrabbit/app/lib/xchi"
 	"github.com/sknv/microrabbit/app/lib/xhttp"
 	"github.com/sknv/microrabbit/app/lib/xos"
 	"github.com/sknv/microrabbit/app/rest/cfg"
+	"github.com/sknv/microrabbit/app/rest/server"
 )
 
 const (
@@ -19,15 +21,18 @@ const (
 func main() {
 	cfg := cfg.Parse()
 
+	conn, err := amqp.Dial(cfg.RabbitURL)
+	xos.FailOnError(err, "failed to connect to RabbitMQ")
+	defer conn.Close()
+
 	// config the http router
 	router := chi.NewRouter()
 	xchi.UseDefaultMiddleware(router)
 	xchi.UseThrottle(router, concurrentRequestLimit)
 
 	// handle requests
-	//
-	// var rest := server.NewRestServer(cfg)
-	// rest.Route(router)
+	rest := server.NewRestServer(conn)
+	rest.Route(router)
 
 	// handle health check requests
 	var health xhttp.HealthServer

@@ -5,21 +5,21 @@ import (
 	"net/http"
 )
 
-type ErrorCode uint32
+type StatusCode uint32
 
 const (
-	OK               ErrorCode = 0
-	InvalidArgument  ErrorCode = 1
-	Unauthenticated  ErrorCode = 2
-	PermissionDenied ErrorCode = 3
-	Internal         ErrorCode = 4
+	OK               StatusCode = 0
+	InvalidArgument  StatusCode = 1
+	Unauthenticated  StatusCode = 2
+	PermissionDenied StatusCode = 3
+	Internal         StatusCode = 4
 )
 
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 
-func NewError(code ErrorCode, message string) *Error {
+func NewError(code StatusCode, message string) *Error {
 	if IsValidErrorCode(code) {
 		return &Error{
 			Code:    uint32(code),
@@ -32,7 +32,12 @@ func NewError(code ErrorCode, message string) *Error {
 	}
 }
 
-func ServerHTTPStatusFromErrorCode(code ErrorCode) int {
+func FromError(err error) (*Error, bool) {
+	qerr, ok := err.(*Error)
+	return qerr, ok
+}
+
+func ServerHTTPStatusFromErrorCode(code StatusCode) int {
 	switch code {
 	case OK:
 		return http.StatusOK
@@ -49,13 +54,17 @@ func ServerHTTPStatusFromErrorCode(code ErrorCode) int {
 	}
 }
 
-func IsValidErrorCode(code ErrorCode) bool {
+func IsValidErrorCode(code StatusCode) bool {
 	return ServerHTTPStatusFromErrorCode(code) != 0
 }
 
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
+
+func (e *Error) StatusCode() StatusCode {
+	return StatusCode(e.Code)
+}
 
 func (e *Error) MetaValue(key string) string {
 	if e.Meta != nil {
@@ -78,5 +87,5 @@ func (e *Error) WithMeta(key string, value string) *Error {
 }
 
 func (e *Error) Error() string {
-	return fmt.Sprintf("amqp error %s: %s", e.Code, e.Message)
+	return fmt.Sprintf("amqp error %d: %s", e.Code, e.Message)
 }
