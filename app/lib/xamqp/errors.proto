@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+// protoc --go_out=. *.proto
+
+package xamqp;
+
+message Error {
+  uint32 code = 1;
+  string message = 2;
+  map<string, string> meta = 3;
+}
