@@ -1,0 +1,14 @@
+version: '3.5'
+
+services:
+  rabbit:
+    image: rabbitmq:3.7-management-alpine
+    hostname: rabbit-node-1
+    ports:
+      - 5672:5672 # rabbit port
+      - 15672:15672 # rabbit management port
+    volumes:
+      - rabbitdata:/var/lib/rabbitmq
+
+volumes:
+  rabbitdata:
