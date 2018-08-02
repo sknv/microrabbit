@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
+	"github.com/pkg/errors"
 	"github.com/streadway/amqp"
 
 	"github.com/sknv/microrabbit/app/lib/rmq"
@@ -63,7 +64,8 @@ func abortOnError(w http.ResponseWriter, err error) {
 	}
 
 	// check if the error is an *rmq.Error
-	rerr, ok := rmq.FromError(err)
+	cause := errors.Cause(err)
+	rerr, ok := rmq.FromError(cause)
 	if !ok {
 		log.Print("[ERROR] abort on error: ", err)
 		panic(err)

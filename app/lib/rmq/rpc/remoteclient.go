@@ -1,6 +1,8 @@
 package rpc
 
 import (
+	"context"
+
 	"github.com/pkg/errors"
 	"github.com/streadway/amqp"
 
@@ -20,7 +22,7 @@ func NewRemoteClient(conn *amqp.Connection) *RemoteClient {
 	return &RemoteClient{Conn: conn}
 }
 
-func (c *RemoteClient) Call(method string, message *amqp.Publishing) (*amqp.Delivery, error) {
+func (c *RemoteClient) Call(ctx context.Context, method string, message *amqp.Publishing) (*amqp.Delivery, error) {
 	ch, err := c.Conn.Channel()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to open a channel")
@@ -36,7 +38,7 @@ func (c *RemoteClient) Call(method string, message *amqp.Publishing) (*amqp.Deli
 
 	// prepare a message and publish it
 	correlationID := xstrings.RandomString(32)
-	msg := prepareMessage(message, correlationID, rpcReplyQueue)
+	msg := prepareMessage(ctx, message, correlationID, rpcReplyQueue)
 	if err = channel.Publish("", method, msg); err != nil {
 		return nil, errors.Wrap(err, "failed to publish a message")
 	}
@@ -48,9 +50,16 @@ func (c *RemoteClient) Call(method string, message *amqp.Publishing) (*amqp.Deli
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 
-func prepareMessage(message *amqp.Publishing, correlationID, replyTo string) *amqp.Publishing {
+func prepareMessage(ctx context.Context, message *amqp.Publishing, correlationID, replyTo string) *amqp.Publishing {
 	message.CorrelationId = correlationID
 	message.ReplyTo = replyTo
+
+	// add headers table if exists
+	headers, ok := HeadersTable(ctx)
+	if !ok {
+		return message
+	}
+	message.Headers = headers
 	return message
 }
 

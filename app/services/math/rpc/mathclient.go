@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	PatternCircle = "/rpc/math/circle"
+	CirclePattern = "/rpc/math/circle"
 )
 
 type MathClient struct {
@@ -21,9 +21,9 @@ func NewClient(rconn *amqp.Connection) *MathClient {
 	return &MathClient{ProtoClient: rpc.NewProtoClient(rconn)}
 }
 
-func (c *MathClient) Circle(_ context.Context, args *CircleArgs) (*CircleReply, error) {
+func (c *MathClient) Circle(ctx context.Context, args *CircleArgs) (*CircleReply, error) {
 	var reply CircleReply
-	if err := c.Call(PatternCircle, args, &reply); err != nil {
+	if err := c.Call(ctx, CirclePattern, args, &reply); err != nil {
 		return nil, errors.Wrap(err, "failed to call Math.Circle")
 	}
 	return &reply, nil
