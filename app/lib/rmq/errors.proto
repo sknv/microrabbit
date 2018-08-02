@@ -2,7 +2,7 @@ syntax = "proto3";
 
 // protoc --go_out=. *.proto
 
-package xamqp;
+package rmq;
 
 message Error {
   uint32 code = 1;

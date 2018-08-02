@@ -1,4 +1,4 @@
-package public
+package rpc
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/streadway/amqp"
 
-	"github.com/sknv/microrabbit/app/lib/xamqp/rpc"
+	"github.com/sknv/microrabbit/app/lib/rmq/rpc"
 )
 
 const (
@@ -17,8 +17,8 @@ type MathClient struct {
 	*rpc.ProtoClient
 }
 
-func NewClient(conn *amqp.Connection) *MathClient {
-	return &MathClient{ProtoClient: rpc.NewProtoClient(conn)}
+func NewClient(rconn *amqp.Connection) *MathClient {
+	return &MathClient{ProtoClient: rpc.NewProtoClient(rconn)}
 }
 
 func (c *MathClient) Circle(_ context.Context, args *CircleArgs) (*CircleReply, error) {

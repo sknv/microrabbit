@@ -21,9 +21,9 @@ const (
 func main() {
 	cfg := cfg.Parse()
 
-	conn, err := amqp.Dial(cfg.RabbitURL)
+	rconn, err := amqp.Dial(cfg.RabbitURL)
 	xos.FailOnError(err, "failed to connect to RabbitMQ")
-	defer conn.Close()
+	defer rconn.Close()
 
 	// config the http router
 	router := chi.NewRouter()
@@ -31,7 +31,7 @@ func main() {
 	xchi.UseThrottle(router, concurrentRequestLimit)
 
 	// handle requests
-	rest := server.NewRestServer(conn)
+	rest := server.NewRestServer(rconn)
 	rest.Route(router)
 
 	// handle health check requests

@@ -1,4 +1,4 @@
-package xamqp
+package rmq
 
 import (
 	"fmt"

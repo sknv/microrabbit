@@ -2,7 +2,7 @@ syntax = "proto3";
 
 // protoc --go_out=. *.proto
 
-package public;
+package rpc;
 
 message RectArgs {
   double width = 1;

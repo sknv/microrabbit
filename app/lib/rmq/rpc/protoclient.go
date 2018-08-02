@@ -7,11 +7,11 @@ import (
 )
 
 type ProtoClient struct {
-	*Client
+	*RemoteClient
 }
 
 func NewProtoClient(conn *amqp.Connection) *ProtoClient {
-	return &ProtoClient{Client: NewClient(conn)}
+	return &ProtoClient{RemoteClient: NewRemoteClient(conn)}
 }
 
 func (c *ProtoClient) Call(method string, args proto.Message, reply proto.Message) error {
@@ -20,7 +20,7 @@ func (c *ProtoClient) Call(method string, args proto.Message, reply proto.Messag
 		return errors.Wrap(err, "failed to marshal args to protobuf")
 	}
 
-	msg, err := c.Client.Call(method, &amqp.Publishing{Body: data})
+	msg, err := c.RemoteClient.Call(method, &amqp.Publishing{Body: data})
 	if err != nil {
 		return errors.Wrapf(err, "failed to call a remote method: %s", method)
 	}

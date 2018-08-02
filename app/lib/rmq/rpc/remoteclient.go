@@ -4,7 +4,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/streadway/amqp"
 
-	"github.com/sknv/microrabbit/app/lib/xamqp"
+	"github.com/sknv/microrabbit/app/lib/rmq"
 	"github.com/sknv/microrabbit/app/lib/xstrings"
 )
 
@@ -12,20 +12,20 @@ const (
 	rpcReplyQueue = "amq.rabbitmq.reply-to"
 )
 
-type Client struct {
+type RemoteClient struct {
 	Conn *amqp.Connection
 }
 
-func NewClient(conn *amqp.Connection) *Client {
-	return &Client{Conn: conn}
+func NewRemoteClient(conn *amqp.Connection) *RemoteClient {
+	return &RemoteClient{Conn: conn}
 }
 
-func (c *Client) Call(method string, message *amqp.Publishing) (*amqp.Delivery, error) {
+func (c *RemoteClient) Call(method string, message *amqp.Publishing) (*amqp.Delivery, error) {
 	ch, err := c.Conn.Channel()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to open a channel")
 	}
-	channel := xamqp.NewChannel(ch)
+	channel := rmq.NewChannel(ch)
 	defer channel.Close()
 
 	// consume from the rpc reply queue

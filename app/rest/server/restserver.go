@@ -10,18 +10,18 @@ import (
 	"github.com/go-chi/render"
 	"github.com/streadway/amqp"
 
-	"github.com/sknv/microrabbit/app/lib/xamqp"
+	"github.com/sknv/microrabbit/app/lib/rmq"
 	"github.com/sknv/microrabbit/app/lib/xhttp"
-	math "github.com/sknv/microrabbit/app/services/math/public"
+	math "github.com/sknv/microrabbit/app/services/math/rpc"
 )
 
 type RestServer struct {
 	mathClient *math.MathClient
 }
 
-func NewRestServer(conn *amqp.Connection) *RestServer {
+func NewRestServer(rconn *amqp.Connection) *RestServer {
 	return &RestServer{
-		mathClient: math.NewClient(conn),
+		mathClient: math.NewClient(rconn),
 	}
 }
 
@@ -62,18 +62,18 @@ func abortOnError(w http.ResponseWriter, err error) {
 		return
 	}
 
-	// check if the error is an *xamqp.Error
-	qerr, ok := xamqp.FromError(err)
+	// check if the error is an *rmq.Error
+	rerr, ok := rmq.FromError(err)
 	if !ok {
 		log.Print("[ERROR] abort on error: ", err)
 		panic(err)
 	}
 
-	status := xamqp.ServerHTTPStatusFromErrorCode(qerr.StatusCode())
+	status := rmq.ServerHTTPStatusFromErrorCode(rerr.StatusCode())
 	if status != http.StatusInternalServerError {
-		log.Print("[ERROR] abort on error: ", qerr)
-		http.Error(w, qerr.Message, status)
+		log.Print("[ERROR] abort on error: ", rerr)
+		http.Error(w, rerr.Message, status)
 		xhttp.AbortHandler()
 	}
-	panic(qerr)
+	panic(rerr)
 }

@@ -12,9 +12,9 @@ import (
 func main() {
 	cfg := cfg.Parse()
 
-	conn, err := amqp.Dial(cfg.RabbitURL)
+	rconn, err := amqp.Dial(cfg.RabbitURL)
 	xos.FailOnError(err, "failed to connect to RabbitMQ")
-	defer conn.Close()
+	defer rconn.Close()
 
 	log.Print("[INFO] starting a rabbit worker")
 	xos.WaitForExit()
