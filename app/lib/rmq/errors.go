@@ -63,6 +63,9 @@ func IsValidErrorCode(code StatusCode) bool {
 // ----------------------------------------------------------------------------
 
 func (e *Error) StatusCode() StatusCode {
+	if e == nil {
+		return OK
+	}
 	return StatusCode(e.Code)
 }
 

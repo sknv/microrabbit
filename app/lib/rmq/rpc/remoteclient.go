@@ -42,8 +42,7 @@ func (c *RemoteClient) Call(ctx context.Context, method string, message *amqp.Pu
 	if err = channel.Publish("", method, msg); err != nil {
 		return nil, errors.Wrap(err, "failed to publish a message")
 	}
-
-	return handleReply(messages, correlationID)
+	return handleReply(ctx, messages, correlationID)
 }
 
 // ----------------------------------------------------------------------------
@@ -63,11 +62,15 @@ func prepareMessage(ctx context.Context, message *amqp.Publishing, correlationID
 	return message
 }
 
-func handleReply(messages <-chan amqp.Delivery, correlationID string) (*amqp.Delivery, error) {
-	for msg := range messages {
-		if correlationID == msg.CorrelationId {
-			return &msg, nil
+func handleReply(ctx context.Context, messages <-chan amqp.Delivery, correlationID string) (*amqp.Delivery, error) {
+	for {
+		select {
+		case msg := <-messages:
+			if correlationID == msg.CorrelationId {
+				return &msg, nil
+			}
+		case <-ctx.Done():
+			return nil, errors.Wrap(ctx.Err(), "failed to handle a reply")
 		}
 	}
-	return nil, errors.Errorf("failed to find a message with the required correlation id: %s", correlationID)
 }

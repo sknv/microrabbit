@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
@@ -39,7 +40,11 @@ func (s *RestServer) Circle(w http.ResponseWriter, r *http.Request) {
 		Radius: radius,
 	}
 
-	reply, err := s.mathClient.Circle(context.Background(), &args)
+	// set request timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	reply, err := s.mathClient.Circle(ctx, &args)
 	abortOnError(w, err)
 	render.JSON(w, r, reply)
 }
@@ -63,19 +68,19 @@ func abortOnError(w http.ResponseWriter, err error) {
 		return
 	}
 
+	log.Print("[ERROR] abort on error: ", err)
+
 	// check if the error is an *rmq.Error
 	cause := errors.Cause(err)
 	rerr, ok := rmq.FromError(cause)
 	if !ok {
-		log.Print("[ERROR] abort on error: ", err)
-		panic(err)
+		xhttp.AbortHandlerWithInternalError(w)
 	}
 
 	status := rmq.ServerHTTPStatusFromErrorCode(rerr.StatusCode())
 	if status != http.StatusInternalServerError {
-		log.Print("[ERROR] abort on error: ", rerr)
-		http.Error(w, rerr.Message, status)
+		http.Error(w, rerr.GetMessage(), status)
 		xhttp.AbortHandler()
 	}
-	panic(rerr)
+	xhttp.AbortHandlerWithInternalError(w)
 }

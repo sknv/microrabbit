@@ -2,7 +2,8 @@ syntax = "proto3";
 
 // protoc --go_out=. *.proto
 
-package rpc;
+package math.rpc;
+option go_package = "rpc";
 
 message RectArgs {
   double width = 1;
