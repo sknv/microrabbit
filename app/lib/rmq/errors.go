@@ -3,22 +3,20 @@ package rmq
 import (
 	"fmt"
 	"net/http"
+
+	"github.com/streadway/amqp"
 )
 
 type StatusCode uint32
 
 const (
-	OK               StatusCode = 0
-	InvalidArgument  StatusCode = 1
-	Unauthenticated  StatusCode = 2
-	PermissionDenied StatusCode = 3
-	Internal         StatusCode = 4
-	DeadlineExceeded StatusCode = 5
+	StatusOK               StatusCode = 0
+	StatusInvalidArgument  StatusCode = 1
+	StatusUnauthenticated  StatusCode = 2
+	StatusPermissionDenied StatusCode = 3
+	StatusInternal         StatusCode = 4
+	StatusDeadlineExceeded StatusCode = 5
 )
-
-// ----------------------------------------------------------------------------
-// ----------------------------------------------------------------------------
-// ----------------------------------------------------------------------------
 
 func NewError(code StatusCode, message string) *Error {
 	if IsValidErrorCode(code) {
@@ -28,7 +26,7 @@ func NewError(code StatusCode, message string) *Error {
 		}
 	}
 	return &Error{
-		Code:    uint32(Internal),
+		Code:    uint32(StatusInternal),
 		Message: "invalid error code: " + fmt.Sprint(code),
 	}
 }
@@ -44,17 +42,17 @@ func FromError(err error) (*Error, bool) {
 
 func ServerHTTPStatusFromErrorCode(code StatusCode) int {
 	switch code {
-	case OK:
+	case StatusOK:
 		return http.StatusOK
-	case InvalidArgument:
+	case StatusInvalidArgument:
 		return http.StatusBadRequest
-	case Unauthenticated:
+	case StatusUnauthenticated:
 		return http.StatusUnauthorized
-	case PermissionDenied:
+	case StatusPermissionDenied:
 		return http.StatusForbidden
-	case Internal:
+	case StatusInternal:
 		return http.StatusInternalServerError
-	case DeadlineExceeded:
+	case StatusDeadlineExceeded:
 		return http.StatusGatewayTimeout
 	default:
 		return 0 // invalid
@@ -69,9 +67,39 @@ func IsValidErrorCode(code StatusCode) bool {
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 
+type headerCode uint16
+
+const (
+	headerCodeKey = "code"
+
+	headerOK    headerCode = 0
+	headerError headerCode = 1
+)
+
+func MessageHasError(message *amqp.Delivery) bool {
+	headers := message.Headers
+	code, ok := headers[headerCodeKey]
+	if !ok { // if there is no such header, we are ok
+		return false
+	}
+	if code != headerError {
+		return false
+	}
+	return true
+}
+
+func MessageWithError(message *amqp.Publishing) *amqp.Publishing {
+	message.Headers[headerCodeKey] = headerError
+	return message
+}
+
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+
 func (e *Error) StatusCode() StatusCode {
 	if e == nil {
-		return OK
+		return StatusOK
 	}
 	return StatusCode(e.Code)
 }

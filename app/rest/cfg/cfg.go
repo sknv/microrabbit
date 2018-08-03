@@ -12,9 +12,9 @@ type Config struct {
 }
 
 func Parse() *Config {
-	var cfg Config
-	if _, err := xflags.ParseArgs(os.Args[1:], &cfg); err != nil {
+	cfg := new(Config)
+	if _, err := xflags.ParseArgs(os.Args[1:], cfg); err != nil {
 		os.Exit(1)
 	}
-	return &cfg
+	return cfg
 }

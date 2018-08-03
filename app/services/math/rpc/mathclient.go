@@ -22,9 +22,9 @@ func NewClient(rconn *amqp.Connection) *MathClient {
 }
 
 func (c *MathClient) Circle(ctx context.Context, args *CircleArgs) (*CircleReply, error) {
-	var reply CircleReply
-	if err := c.Call(ctx, CirclePattern, args, &reply); err != nil {
+	reply := new(CircleReply)
+	if err := c.Call(ctx, CirclePattern, args, reply); err != nil {
 		return nil, errors.Wrap(err, "failed to call Math.Circle")
 	}
-	return &reply, nil
+	return reply, nil
 }

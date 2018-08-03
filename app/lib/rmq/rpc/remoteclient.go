@@ -70,7 +70,7 @@ func handleReply(ctx context.Context, messages <-chan amqp.Delivery, correlation
 				return &msg, nil
 			}
 		case <-ctx.Done():
-			err := rmq.WrapError(rmq.DeadlineExceeded, ctx.Err())
+			err := rmq.WrapError(rmq.StatusDeadlineExceeded, ctx.Err())
 			return nil, errors.Wrap(err, "failed to handle a reply")
 		}
 	}

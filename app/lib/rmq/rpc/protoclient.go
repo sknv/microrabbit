@@ -6,6 +6,8 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 	"github.com/streadway/amqp"
+
+	"github.com/sknv/microrabbit/app/lib/rmq"
 )
 
 type ProtoClient struct {
@@ -27,11 +29,18 @@ func (c *ProtoClient) Call(ctx context.Context, method string, args proto.Messag
 		return errors.Wrapf(err, "failed to call a remote method: %s", method)
 	}
 
+	// handle an error transfered over the network
+	if rmq.MessageHasError(msg) {
+		rerr := new(rmq.Error)
+		if err = proto.Unmarshal(msg.Body, rerr); err != nil {
+			return errors.Wrap(err, "failed to unmarshal an error from protobuf")
+		}
+		return rerr
+	}
+
+	// handle a reply
 	if err = proto.Unmarshal(msg.Body, reply); err != nil {
 		return errors.Wrap(err, "failed to unmarshal a reply from protobuf")
 	}
-
-	// todo: handle error transfered over the network
-
 	return nil
 }

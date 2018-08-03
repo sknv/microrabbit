@@ -9,7 +9,7 @@ import (
 type contextKey string
 
 const (
-	headersKey = contextKey("rmq.headers")
+	headersKey contextKey = "rmq.headers"
 )
 
 func WithHeaders(ctx context.Context, headers amqp.Table) context.Context {
