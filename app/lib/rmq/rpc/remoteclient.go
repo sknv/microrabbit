@@ -2,6 +2,8 @@ package rpc
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/streadway/amqp"
@@ -52,12 +54,29 @@ func (c *RemoteClient) Call(ctx context.Context, method string, message *amqp.Pu
 func prepareMessage(ctx context.Context, message *amqp.Publishing, correlationID, replyTo string) *amqp.Publishing {
 	message.CorrelationId = correlationID
 	message.ReplyTo = replyTo
+	message = expireIfNeeded(ctx, message)     // expire a message if a deadline specified for the context
+	message = addHeadersIfNeeded(ctx, message) // add headers table if one exists in the context
+	return message
+}
 
-	// add headers table if exists
+func expireIfNeeded(ctx context.Context, message *amqp.Publishing) *amqp.Publishing {
+	deadline, ok := ctx.Deadline()
+	if !ok {
+		return message
+	}
+
+	exp := deadline.Sub(time.Now()) // duration from now
+	expms := exp.Seconds() * 1000   // expiration in ms
+	message.Expiration = fmt.Sprint(expms)
+	return message
+}
+
+func addHeadersIfNeeded(ctx context.Context, message *amqp.Publishing) *amqp.Publishing {
 	headers, ok := Headers(ctx)
 	if !ok {
 		return message
 	}
+
 	message.Headers = headers
 	return message
 }
