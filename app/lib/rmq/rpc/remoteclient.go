@@ -8,6 +8,7 @@ import (
 	"github.com/streadway/amqp"
 
 	"github.com/sknv/microrabbit/app/lib/rmq"
+	"github.com/sknv/microrabbit/app/lib/xcontext"
 	"github.com/sknv/microrabbit/app/lib/xstrings"
 )
 
@@ -59,7 +60,7 @@ func prepareMessage(ctx context.Context, message *amqp.Publishing, correlationID
 }
 
 func expireIfNeeded(ctx context.Context, message *amqp.Publishing) *amqp.Publishing {
-	timeout, ok := Timeout(ctx)
+	timeout, ok := xcontext.Timeout(ctx)
 	if !ok {
 		return message
 	}
