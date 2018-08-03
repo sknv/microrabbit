@@ -54,7 +54,7 @@ func prepareMessage(ctx context.Context, message *amqp.Publishing, correlationID
 	message.ReplyTo = replyTo
 
 	// add headers table if exists
-	headers, ok := HeadersTable(ctx)
+	headers, ok := Headers(ctx)
 	if !ok {
 		return message
 	}
@@ -70,7 +70,8 @@ func handleReply(ctx context.Context, messages <-chan amqp.Delivery, correlation
 				return &msg, nil
 			}
 		case <-ctx.Done():
-			return nil, errors.Wrap(ctx.Err(), "failed to handle a reply")
+			err := rmq.WrapError(rmq.DeadlineExceeded, ctx.Err())
+			return nil, errors.Wrap(err, "failed to handle a reply")
 		}
 	}
 }

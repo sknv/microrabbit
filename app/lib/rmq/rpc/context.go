@@ -12,11 +12,11 @@ const (
 	headersKey = contextKey("rmq.headers")
 )
 
-func WithHeadersTable(ctx context.Context, headers amqp.Table) context.Context {
+func WithHeaders(ctx context.Context, headers amqp.Table) context.Context {
 	return context.WithValue(ctx, headersKey, headers)
 }
 
-func HeadersTable(ctx context.Context) (amqp.Table, bool) {
+func Headers(ctx context.Context) (amqp.Table, bool) {
 	headers, ok := ctx.Value(headersKey).(amqp.Table)
 	return headers, ok
 }

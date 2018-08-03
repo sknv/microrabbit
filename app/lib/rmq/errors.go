@@ -13,6 +13,7 @@ const (
 	Unauthenticated  StatusCode = 2
 	PermissionDenied StatusCode = 3
 	Internal         StatusCode = 4
+	DeadlineExceeded StatusCode = 5
 )
 
 // ----------------------------------------------------------------------------
@@ -32,6 +33,10 @@ func NewError(code StatusCode, message string) *Error {
 	}
 }
 
+func WrapError(code StatusCode, err error) *Error {
+	return NewError(code, err.Error())
+}
+
 func FromError(err error) (*Error, bool) {
 	qerr, ok := err.(*Error)
 	return qerr, ok
@@ -49,6 +54,8 @@ func ServerHTTPStatusFromErrorCode(code StatusCode) int {
 		return http.StatusForbidden
 	case Internal:
 		return http.StatusInternalServerError
+	case DeadlineExceeded:
+		return http.StatusGatewayTimeout
 	default:
 		return 0 // invalid
 	}
