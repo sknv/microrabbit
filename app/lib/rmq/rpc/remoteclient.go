@@ -8,6 +8,7 @@ import (
 	"github.com/streadway/amqp"
 
 	"github.com/sknv/microrabbit/app/lib/rmq"
+	"github.com/sknv/microrabbit/app/lib/rmq/status"
 	"github.com/sknv/microrabbit/app/lib/xcontext"
 	"github.com/sknv/microrabbit/app/lib/xstrings"
 )
@@ -88,7 +89,7 @@ func handleReply(ctx context.Context, messages <-chan amqp.Delivery, correlation
 				return &msg, nil
 			}
 		case <-ctx.Done():
-			err := rmq.NewError(rmq.StatusDeadlineExceeded, ctx.Err().Error())
+			err := status.Error(status.DeadlineExceeded, ctx.Err().Error())
 			return nil, errors.Wrap(err, "failed to handle a reply")
 		}
 	}

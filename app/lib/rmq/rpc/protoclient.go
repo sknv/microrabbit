@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/streadway/amqp"
 
-	"github.com/sknv/microrabbit/app/lib/rmq"
+	"github.com/sknv/microrabbit/app/lib/rmq/status"
 )
 
 type ProtoClient struct {
@@ -30,8 +30,8 @@ func (c *ProtoClient) Call(ctx context.Context, method string, args proto.Messag
 	}
 
 	// handle an error transfered over the network
-	if rmq.MessageHasError(msg) {
-		rerr := new(rmq.Error)
+	if status.HasError(msg) {
+		rerr := new(status.Status)
 		if err = proto.Unmarshal(msg.Body, rerr); err != nil {
 			return errors.Wrap(err, "failed to unmarshal an error from protobuf")
 		}

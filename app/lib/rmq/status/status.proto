@@ -2,10 +2,10 @@ syntax = "proto3";
 
 // protoc --go_out=. *.proto
 
-package rmq;
-option go_package = "rmq";
+package rmq.status;
+option go_package = "status";
 
-message Error {
+message Status {
   uint32 code = 1;
   string message = 2;
   map<string, string> meta = 3;

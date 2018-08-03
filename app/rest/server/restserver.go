@@ -12,7 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/streadway/amqp"
 
-	"github.com/sknv/microrabbit/app/lib/rmq"
+	"github.com/sknv/microrabbit/app/lib/rmq/status"
 	"github.com/sknv/microrabbit/app/lib/xhttp"
 	math "github.com/sknv/microrabbit/app/services/math/rpc"
 )
@@ -72,8 +72,8 @@ func abortOnError(w http.ResponseWriter, err error) {
 
 	// process as a rmq error
 	cause := errors.Cause(err)
-	rerr, _ := rmq.FromError(cause)
-	status := rmq.ServerHTTPStatusFromErrorCode(rerr.StatusCode())
+	rerr, _ := status.FromError(cause)
+	status := status.ServerHTTPStatusFromErrorCode(rerr.StatusCode())
 	if status != http.StatusInternalServerError {
 		http.Error(w, rerr.GetMessage(), status)
 		xhttp.AbortHandler()
