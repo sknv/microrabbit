@@ -7,7 +7,7 @@ import (
 )
 
 type Config struct {
-	RabbitURL string `long:"rabbit-url" env:"RABBIT_URL" default:"amqp://guest:guest@localhost:5672" description:"rabbitmq url"`
+	RabbitAddr string `long:"rabbit-addr" env:"RABBIT_ADDR" default:"amqp://guest:guest@localhost:5672" description:"rabbitmq address"`
 }
 
 func Parse() *Config {

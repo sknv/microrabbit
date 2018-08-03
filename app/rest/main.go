@@ -21,7 +21,7 @@ const (
 func main() {
 	cfg := cfg.Parse()
 
-	rconn, err := amqp.Dial(cfg.RabbitURL)
+	rconn, err := amqp.Dial(cfg.RabbitAddr)
 	xos.FailOnError(err, "failed to connect to RabbitMQ")
 	defer rconn.Close()
 

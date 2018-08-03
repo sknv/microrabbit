@@ -33,15 +33,10 @@ func NewError(code StatusCode, message string) *Error {
 
 func FromError(err error) (*Error, bool) {
 	rerr, ok := err.(*Error)
-	return rerr, ok
-}
-
-func WrapError(err error, code StatusCode) *Error {
-	rerr, ok := FromError(err)
-	if ok { // do not wrap if provided err is already an *Error
-		return rerr
+	if ok {
+		return rerr, true
 	}
-	return NewError(code, err.Error())
+	return NewError(StatusInternal, err.Error()), false
 }
 
 func ServerHTTPStatusFromErrorCode(code StatusCode) int {

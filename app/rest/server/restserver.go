@@ -70,13 +70,9 @@ func abortOnError(w http.ResponseWriter, err error) {
 
 	log.Print("[ERROR] abort on error: ", err)
 
-	// check if the error is an *rmq.Error
+	// process as a rmq error
 	cause := errors.Cause(err)
-	rerr, ok := rmq.FromError(cause)
-	if !ok {
-		xhttp.AbortHandlerWithInternalError(w)
-	}
-
+	rerr, _ := rmq.FromError(cause)
 	status := rmq.ServerHTTPStatusFromErrorCode(rerr.StatusCode())
 	if status != http.StatusInternalServerError {
 		http.Error(w, rerr.GetMessage(), status)
