@@ -31,13 +31,17 @@ func NewError(code StatusCode, message string) *Error {
 	}
 }
 
-func WrapError(code StatusCode, err error) *Error {
-	return NewError(code, err.Error())
+func FromError(err error) (*Error, bool) {
+	rerr, ok := err.(*Error)
+	return rerr, ok
 }
 
-func FromError(err error) (*Error, bool) {
-	qerr, ok := err.(*Error)
-	return qerr, ok
+func WrapError(err error, code StatusCode) *Error {
+	rerr, ok := FromError(err)
+	if ok { // do not wrap if provided err is already an *Error
+		return rerr
+	}
+	return NewError(code, err.Error())
 }
 
 func ServerHTTPStatusFromErrorCode(code StatusCode) int {
