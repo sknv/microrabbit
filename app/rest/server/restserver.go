@@ -40,8 +40,8 @@ func (s *RestServer) Circle(w http.ResponseWriter, r *http.Request) {
 		Radius: radius,
 	}
 
-	// set request timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// set the reply timeout
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
 	reply, err := s.mathClient.Circle(ctx, &args)

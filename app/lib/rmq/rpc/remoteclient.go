@@ -3,7 +3,6 @@ package rpc
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/streadway/amqp"
@@ -60,14 +59,13 @@ func prepareMessage(ctx context.Context, message *amqp.Publishing, correlationID
 }
 
 func expireIfNeeded(ctx context.Context, message *amqp.Publishing) *amqp.Publishing {
-	deadline, ok := ctx.Deadline()
+	timeout, ok := Timeout(ctx)
 	if !ok {
 		return message
 	}
 
-	exp := deadline.Sub(time.Now()) // duration from now
-	expms := exp.Seconds() * 1000   // expiration in ms
-	message.Expiration = fmt.Sprint(expms)
+	exp := timeout.Seconds() * 1000 // expiration in ms
+	message.Expiration = fmt.Sprint(exp)
 	return message
 }
 
