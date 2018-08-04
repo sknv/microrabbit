@@ -14,3 +14,6 @@
 # ignore environment variables and docker-compose files
 .env
 docker-compose.yml
+
+# ignore vagrant stuff
+.vagrant
