@@ -3,6 +3,7 @@ package rmq
 import (
 	"fmt"
 
+	"github.com/pkg/errors"
 	"github.com/streadway/amqp"
 )
 
@@ -10,8 +11,12 @@ type Channel struct {
 	*amqp.Channel
 }
 
-func NewChannel(channel *amqp.Channel) *Channel {
-	return &Channel{Channel: channel}
+func NewChannel(conn *amqp.Connection) (*Channel, error) {
+	ch, err := conn.Channel()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to open a channel")
+	}
+	return &Channel{Channel: ch}, nil
 }
 
 func (c *Channel) DeclareQueue(name string, durable bool) (amqp.Queue, error) {
