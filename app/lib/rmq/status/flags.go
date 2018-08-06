@@ -15,8 +15,8 @@ const (
 
 func HasError(message *amqp.Delivery) bool {
 	headers := message.Headers
-	code, ok := headers[headerCodeKey]
-	if !ok { // if there is no such header, we are ok
+	code, exist := headers[headerCodeKey]
+	if !exist { // if there is no such header, we are ok
 		return false
 	}
 	if code != headerError {

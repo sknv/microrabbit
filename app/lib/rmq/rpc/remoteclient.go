@@ -28,14 +28,14 @@ func NewRemoteClient(conn *amqp.Connection) *RemoteClient {
 func (c *RemoteClient) Call(ctx context.Context, method string, message *amqp.Publishing) (*amqp.Delivery, error) {
 	ch, err := rmq.NewChannel(c.Conn)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to open a channel for a remote client")
+		return nil, errors.Wrap(err, "failed to open a channel for the remote client")
 	}
 	defer ch.Close()
 
 	// consume from the rpc reply queue
 	messages, err := ch.Consume(rpcReplyQueue, true)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to register a consumer for a remote client")
+		return nil, errors.Wrap(err, "failed to register a consumer for the remote client")
 	}
 
 	// prepare a message and publish it
@@ -60,8 +60,8 @@ func prepareMessage(ctx context.Context, message *amqp.Publishing, correlationID
 }
 
 func expireIfNeeded(ctx context.Context, message *amqp.Publishing) *amqp.Publishing {
-	timeout, ok := xcontext.Timeout(ctx)
-	if !ok {
+	timeout, exist := xcontext.Timeout(ctx)
+	if !exist {
 		return message
 	}
 
@@ -71,8 +71,8 @@ func expireIfNeeded(ctx context.Context, message *amqp.Publishing) *amqp.Publish
 }
 
 func addHeadersIfNeeded(ctx context.Context, message *amqp.Publishing) *amqp.Publishing {
-	headers, ok := Headers(ctx)
-	if !ok {
+	headers, exist := Headers(ctx)
+	if !exist {
 		return message
 	}
 
@@ -89,7 +89,7 @@ func handleReply(ctx context.Context, messages <-chan amqp.Delivery, correlation
 			}
 		case <-ctx.Done():
 			err := status.Error(status.DeadlineExceeded, ctx.Err().Error())
-			return nil, errors.Wrap(err, "failed to handle a reply for a remote client")
+			return nil, errors.Wrap(err, "failed to handle a reply for the remote client")
 		}
 	}
 }

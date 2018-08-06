@@ -11,6 +11,7 @@ import (
 
 const (
 	CirclePattern = "/rpc/math/circle"
+	RectPattern   = "/rpc/math/rect"
 )
 
 type MathClient struct {
@@ -25,6 +26,14 @@ func (c *MathClient) Circle(ctx context.Context, args *CircleArgs) (*CircleReply
 	reply := new(CircleReply)
 	if err := c.Call(ctx, CirclePattern, args, reply); err != nil {
 		return nil, errors.Wrap(err, "failed to call Math.Circle")
+	}
+	return reply, nil
+}
+
+func (c *MathClient) Rect(ctx context.Context, args *RectArgs) (*RectReply, error) {
+	reply := new(RectReply)
+	if err := c.Call(ctx, RectPattern, args, reply); err != nil {
+		return nil, errors.Wrap(err, "failed to call Math.Rect")
 	}
 	return reply, nil
 }

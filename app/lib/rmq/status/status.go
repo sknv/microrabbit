@@ -52,13 +52,13 @@ func Error(code statusCode, message string) *Status {
 	}
 	return &Status{
 		Code:    uint32(Internal),
-		Message: "invalid status code: " + fmt.Sprint(code),
+		Message: "rmq: invalid status code: " + fmt.Sprint(code),
 	}
 }
 
 func FromError(err error) (*Status, bool) {
-	rerr, ok := err.(*Status)
-	if ok {
+	rerr, match := err.(*Status)
+	if match {
 		return rerr, true
 	}
 	return Error(Internal, err.Error()), false
@@ -92,5 +92,5 @@ func (s *Status) WithMeta(key string, value string) *Status {
 }
 
 func (s *Status) Error() string {
-	return fmt.Sprintf("amqp error %d: %s", s.Code, s.Message)
+	return fmt.Sprintf("rmq error %d: %s", s.Code, s.Message)
 }
