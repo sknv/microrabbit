@@ -10,8 +10,8 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
 	"github.com/pkg/errors"
-	"github.com/streadway/amqp"
 
+	"github.com/sknv/microrabbit/app/lib/rmq"
 	"github.com/sknv/microrabbit/app/lib/rmq/status"
 	"github.com/sknv/microrabbit/app/lib/xhttp"
 	math "github.com/sknv/microrabbit/app/math/rpc"
@@ -21,7 +21,7 @@ type RestServer struct {
 	mathClient math.Math
 }
 
-func NewRestServer(rconn *amqp.Connection) *RestServer {
+func NewRestServer(rconn *rmq.Connection) *RestServer {
 	return &RestServer{mathClient: math.NewClient(rconn)}
 }
 

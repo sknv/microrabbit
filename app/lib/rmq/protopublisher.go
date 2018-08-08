@@ -7,28 +7,22 @@ import (
 )
 
 type ProtoPublisher struct {
-	Conn *amqp.Connection
+	Conn *Connection
 }
 
-func NewProtoPublisher(conn *amqp.Connection) *ProtoPublisher {
+func NewProtoPublisher(conn *Connection) *ProtoPublisher {
 	return &ProtoPublisher{Conn: conn}
 }
 
 func (p *ProtoPublisher) Publish(exchange, routingKey string, message proto.Message, publish *amqp.Publishing) error {
-	ch, err := NewChannel(p.Conn)
-	if err != nil {
-		return errors.WithMessage(err, "failed to open a channel for the proto publisher")
-	}
-	defer ch.Close()
-
 	data, err := proto.Marshal(message)
 	if err != nil {
-		return errors.WithMessage(err, "failed to marshal a message to protobuf")
+		return errors.WithMessage(err, "failed to marshal the message to protobuf")
 	}
 
 	publish.Body = data
-	if err = ch.Publish(exchange, routingKey, publish); err != nil {
-		return errors.WithMessage(err, "failed to publish a proto message")
+	if err = p.Conn.Publish(exchange, routingKey, publish); err != nil {
+		return errors.WithMessage(err, "failed to publish the protobuf message")
 	}
 	return nil
 }

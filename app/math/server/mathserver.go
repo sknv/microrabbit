@@ -12,9 +12,9 @@ import (
 	"github.com/sknv/microrabbit/app/math/rpc"
 )
 
-func RegisterMathServer(rmqServer *rmq.Server, math rpc.Math) {
-	mathServer := newMathServer(rmqServer.Conn, math)
-	mathServer.route(rmqServer)
+func RegisterMathServer(rserver *rmq.Server, math rpc.Math) {
+	mathServer := newMathServer(rserver.Conn, math)
+	mathServer.route(rserver)
 }
 
 // ----------------------------------------------------------------------------
@@ -26,7 +26,7 @@ type mathServer struct {
 	publisher *rmq.ProtoPublisher
 }
 
-func newMathServer(rconn *amqp.Connection, math rpc.Math) *mathServer {
+func newMathServer(rconn *rmq.Connection, math rpc.Math) *mathServer {
 	return &mathServer{
 		math:      math,
 		publisher: rmq.NewProtoPublisher(rconn),
@@ -34,9 +34,9 @@ func newMathServer(rconn *amqp.Connection, math rpc.Math) *mathServer {
 }
 
 // map a request to a pattern
-func (s *mathServer) route(rmqServer *rmq.Server) {
-	rmqServer.Handle(rpc.CirclePattern, false, false, 0, withLogger(s.circle))
-	rmqServer.Handle(rpc.RectPattern, false, false, 0, withLogger(s.rect))
+func (s *mathServer) route(rserver *rmq.Server) {
+	rserver.Handle(rpc.CirclePattern, false, false, 0, withLogger(s.circle))
+	rserver.Handle(rpc.RectPattern, false, false, 0, withLogger(s.rect))
 }
 
 func (s *mathServer) circle(ctx context.Context, message *amqp.Delivery) {

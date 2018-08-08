@@ -4,8 +4,8 @@ import (
 	"time"
 
 	"github.com/go-chi/chi"
-	"github.com/streadway/amqp"
 
+	"github.com/sknv/microrabbit/app/lib/rmq"
 	"github.com/sknv/microrabbit/app/lib/xchi"
 	"github.com/sknv/microrabbit/app/lib/xhttp"
 	"github.com/sknv/microrabbit/app/lib/xos"
@@ -22,7 +22,7 @@ func main() {
 	cfg := cfg.Parse()
 
 	// connect to RabbitMQ
-	rconn, err := amqp.Dial(cfg.RabbitAddr)
+	rconn, err := rmq.Dial(cfg.RabbitAddr)
 	xos.FailOnError(err, "failed to connect to RabbitMQ")
 	defer rconn.Close()
 

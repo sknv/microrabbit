@@ -1,7 +1,6 @@
 package rmq
 
 import (
-	"github.com/pkg/errors"
 	"github.com/streadway/amqp"
 )
 
@@ -12,7 +11,7 @@ type Channel struct {
 func NewChannel(conn *amqp.Connection) (*Channel, error) {
 	ch, err := conn.Channel()
 	if err != nil {
-		return nil, errors.WithMessage(err, "failed to open a channel")
+		return nil, err
 	}
 	return &Channel{Channel: ch}, nil
 }
@@ -36,7 +35,7 @@ func (c *Channel) QoS(prefetchCount int) error {
 	)
 }
 
-func (c *Channel) Consume(queueName string, autoAck bool) (<-chan amqp.Delivery, error) {
+func (c *Channel) ConsumeFrom(queueName string, autoAck bool) (<-chan amqp.Delivery, error) {
 	return c.Channel.Consume(
 		queueName, // queue
 		"",        // consumer
@@ -48,7 +47,7 @@ func (c *Channel) Consume(queueName string, autoAck bool) (<-chan amqp.Delivery,
 	)
 }
 
-func (c *Channel) Publish(exchange, routingKey string, message *amqp.Publishing) error {
+func (c *Channel) PublishTo(exchange, routingKey string, message *amqp.Publishing) error {
 	return c.Channel.Publish(
 		exchange,   // exchange
 		routingKey, // routing key

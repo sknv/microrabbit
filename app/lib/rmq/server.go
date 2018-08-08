@@ -11,13 +11,13 @@ import (
 type HandlerFunc func(context.Context, *amqp.Delivery)
 
 type Server struct {
-	Conn *amqp.Connection
+	Conn *Connection
 
 	mu      sync.RWMutex
 	entries map[string]*serverEntry
 }
 
-func NewServer(conn *amqp.Connection) *Server {
+func NewServer(conn *Connection) *Server {
 	return &Server{Conn: conn}
 }
 
@@ -66,9 +66,9 @@ type serverEntry struct {
 }
 
 func newServerEntry(
-	conn *amqp.Connection, pattern string, autoAck, durable bool, channelLimit int, handler HandlerFunc,
+	conn *Connection, pattern string, autoAck, durable bool, channelLimit int, handler HandlerFunc,
 ) *serverEntry {
-	ch, err := NewChannel(conn)
+	ch, err := conn.OpenChannel()
 	if err != nil {
 		panic("rmq: failed to open a channel for the server entry")
 	}
@@ -82,7 +82,7 @@ func newServerEntry(
 		panic("rmq: failed to set QoS for the server entry")
 	}
 
-	msgs, err := ch.Consume(queue.Name, autoAck)
+	msgs, err := ch.ConsumeFrom(queue.Name, autoAck)
 	if err != nil {
 		panic("rmq: failed to consume a queue for the server entry")
 	}

@@ -1,29 +1,8 @@
 package rpc
 
 import (
-	"context"
-
 	"github.com/streadway/amqp"
 )
-
-type contextKey string
-
-const (
-	metaKey contextKey = "rmq.meta"
-)
-
-func WithMeta(ctx context.Context, meta amqp.Table) context.Context {
-	return context.WithValue(ctx, metaKey, meta)
-}
-
-func Meta(ctx context.Context) (amqp.Table, bool) {
-	meta, exist := ctx.Value(metaKey).(amqp.Table)
-	return meta, exist
-}
-
-// ----------------------------------------------------------------------------
-// ----------------------------------------------------------------------------
-// ----------------------------------------------------------------------------
 
 type responseCode uint16
 

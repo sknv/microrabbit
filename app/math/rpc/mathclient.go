@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	"github.com/streadway/amqp"
 
+	"github.com/sknv/microrabbit/app/lib/rmq"
 	"github.com/sknv/microrabbit/app/lib/rmq/rpc"
 )
 
@@ -13,7 +13,7 @@ type MathClient struct {
 	*rpc.ProtoClient
 }
 
-func NewClient(rconn *amqp.Connection) Math {
+func NewClient(rconn *rmq.Connection) Math {
 	return &MathClient{ProtoClient: rpc.NewProtoClient(rconn)}
 }
 
