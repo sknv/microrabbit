@@ -27,12 +27,16 @@ func NewRestServer(rconn *amqp.Connection) *RestServer {
 
 func (s *RestServer) Route(router chi.Router) {
 	router.Route("/math", func(r chi.Router) {
-		r.Get("/circle", s.Circle)
-		r.Get("/rect", s.Rect)
+		r.Get("/circle", s.circle)
+		r.Get("/rect", s.rect)
 	})
 }
 
-func (s *RestServer) Circle(w http.ResponseWriter, r *http.Request) {
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+
+func (s *RestServer) circle(w http.ResponseWriter, r *http.Request) {
 	queryParams := r.URL.Query()
 	radius := parseFloat(w, queryParams.Get("r"))
 	args := math.CircleArgs{
@@ -48,7 +52,7 @@ func (s *RestServer) Circle(w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, r, reply)
 }
 
-func (s *RestServer) Rect(w http.ResponseWriter, r *http.Request) {
+func (s *RestServer) rect(w http.ResponseWriter, r *http.Request) {
 	queryParams := r.URL.Query()
 	width := parseFloat(w, queryParams.Get("w"))
 	height := parseFloat(w, queryParams.Get("h"))
