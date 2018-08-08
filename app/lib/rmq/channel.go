@@ -14,7 +14,7 @@ type Channel struct {
 func NewChannel(conn *amqp.Connection) (*Channel, error) {
 	ch, err := conn.Channel()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to open a channel")
+		return nil, errors.WithMessage(err, "failed to open a channel")
 	}
 	return &Channel{Channel: ch}, nil
 }

@@ -14,17 +14,15 @@ import (
 
 	"github.com/sknv/microrabbit/app/lib/rmq/status"
 	"github.com/sknv/microrabbit/app/lib/xhttp"
-	math "github.com/sknv/microrabbit/app/services/math/rpc"
+	math "github.com/sknv/microrabbit/app/math/rpc"
 )
 
 type RestServer struct {
-	mathClient *math.MathClient
+	mathClient math.Math
 }
 
 func NewRestServer(rconn *amqp.Connection) *RestServer {
-	return &RestServer{
-		mathClient: math.NewClient(rconn),
-	}
+	return &RestServer{mathClient: math.NewClient(rconn)}
 }
 
 func (s *RestServer) Route(router chi.Router) {
@@ -72,10 +70,10 @@ func abortOnError(w http.ResponseWriter, err error) {
 
 	// process as a rmq error
 	cause := errors.Cause(err)
-	rerr, _ := status.FromError(cause)
-	status := status.ServerHTTPStatusFromErrorCode(rerr.StatusCode())
+	stat, _ := status.FromError(cause)
+	status := status.ServerHTTPStatusFromErrorCode(stat.StatusCode())
 	if status != http.StatusInternalServerError {
-		http.Error(w, rerr.GetMessage(), status)
+		http.Error(w, stat.GetMessage(), status)
 		xhttp.AbortHandler()
 	}
 	xhttp.AbortHandlerWithInternalError(w)

@@ -28,23 +28,23 @@ func NewRemoteClient(conn *amqp.Connection) *RemoteClient {
 func (c *RemoteClient) Call(ctx context.Context, method string, message *amqp.Publishing) (*amqp.Delivery, error) {
 	ch, err := rmq.NewChannel(c.Conn)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to open a channel for the remote client")
+		return nil, errors.WithMessage(err, "failed to open a channel for the remote client")
 	}
 	defer ch.Close()
 
 	// consume from the rpc reply queue
-	messages, err := ch.Consume(rpcReplyQueue, true)
+	msgs, err := ch.Consume(rpcReplyQueue, true)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to register a consumer for the remote client")
+		return nil, errors.WithMessage(err, "failed to register a consumer for the remote client")
 	}
 
 	// prepare a message and publish it
 	correlationID := xstrings.RandomString(32)
 	msg := prepareMessage(ctx, message, correlationID, rpcReplyQueue)
 	if err = ch.Publish("", method, msg); err != nil {
-		return nil, errors.Wrap(err, "failed to publish a message from a remote client")
+		return nil, errors.WithMessage(err, fmt.Sprintf("failed to publish a message from the remote client to %s", method))
 	}
-	return handleReply(ctx, messages, correlationID)
+	return handleReply(ctx, msgs, correlationID)
 }
 
 // ----------------------------------------------------------------------------
@@ -89,7 +89,7 @@ func handleReply(ctx context.Context, messages <-chan amqp.Delivery, correlation
 			}
 		case <-ctx.Done():
 			err := status.Error(status.DeadlineExceeded, ctx.Err().Error())
-			return nil, errors.Wrap(err, "failed to handle a reply for the remote client")
+			return nil, errors.WithMessage(err, "failed to handle a reply for the remote client")
 		}
 	}
 }

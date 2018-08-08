@@ -5,12 +5,12 @@ import (
 	"math"
 
 	"github.com/sknv/microrabbit/app/lib/rmq/status"
-	"github.com/sknv/microrabbit/app/services/math/rpc"
+	"github.com/sknv/microrabbit/app/math/rpc"
 )
 
-type Math struct{}
+type MathImpl struct{}
 
-func (*Math) Rect(_ context.Context, args *rpc.RectArgs) (*rpc.RectReply, error) {
+func (*MathImpl) Rect(_ context.Context, args *rpc.RectArgs) (*rpc.RectReply, error) {
 	if args.Width <= 0 || args.Height <= 0 {
 		return nil, status.Error(status.InvalidArgument, "width and height must be positive numbers")
 	}
@@ -21,7 +21,7 @@ func (*Math) Rect(_ context.Context, args *rpc.RectArgs) (*rpc.RectReply, error)
 	}, nil
 }
 
-func (*Math) Circle(_ context.Context, args *rpc.CircleArgs) (*rpc.CircleReply, error) {
+func (*MathImpl) Circle(_ context.Context, args *rpc.CircleArgs) (*rpc.CircleReply, error) {
 	if args.Radius <= 0 {
 		return nil, status.Error(status.InvalidArgument, "radius must be a positive number")
 	}

@@ -7,4 +7,4 @@
 set -a; [ -f .env ] && . .env; set +a
 
 # start the dev server
-go run app/services/math/main.go
+go run app/math/main.go
