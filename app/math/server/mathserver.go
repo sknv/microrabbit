@@ -22,16 +22,14 @@ func RegisterMathServer(rmqServer *rmq.Server, math rpc.Math) {
 // ----------------------------------------------------------------------------
 
 type mathServer struct {
-	rconn *amqp.Connection
-	math  rpc.Math
-	// publisher *rmq.ProtoPublisher
+	math      rpc.Math
+	publisher *rmq.ProtoPublisher
 }
 
 func newMathServer(rconn *amqp.Connection, math rpc.Math) *mathServer {
 	return &mathServer{
-		rconn: rconn,
-		math:  math,
-		// publisher: rmq.NewProtoPublisher(rmqConn),
+		math:      math,
+		publisher: rmq.NewProtoPublisher(rconn),
 	}
 }
 
@@ -41,7 +39,7 @@ func (s *mathServer) route(rmqServer *rmq.Server) {
 	// rmqServer.Handle(rpc.RectPattern, false, false, 0, withLogger(s.rect))
 }
 
-func (s *mathServer) circle(ctx context.Context, channel *rmq.Channel, message *amqp.Delivery) {
+func (s *mathServer) circle(ctx context.Context, message *amqp.Delivery) {
 	args := new(rpc.CircleArgs)
 	if err := proto.Unmarshal(message.Body, args); err != nil {
 		panic(err) // todo: return error
@@ -52,16 +50,7 @@ func (s *mathServer) circle(ctx context.Context, channel *rmq.Channel, message *
 		panic(err) // todo: return error
 	}
 
-	data, err := proto.Marshal(reply)
-	if err != nil {
-		panic(err) // todo: return error
-	}
-
-	publish := &amqp.Publishing{
-		CorrelationId: message.CorrelationId,
-		Body:          data,
-	}
-	if err = channel.Publish("", message.ReplyTo, publish); err != nil {
+	if err = s.publisher.Publish("", message.ReplyTo, message.CorrelationId, reply); err != nil {
 		panic(err) // todo: return error
 	}
 }
@@ -87,11 +76,11 @@ func (s *mathServer) circle(ctx context.Context, channel *rmq.Channel, message *
 // ----------------------------------------------------------------------------
 
 func withLogger(next rmq.HandlerFunc) rmq.HandlerFunc {
-	return func(ctx context.Context, ch *rmq.Channel, msg *amqp.Delivery) {
+	return func(ctx context.Context, msg *amqp.Delivery) {
 		start := time.Now()
 		defer func() {
 			log.Printf("[INFO] request \"%s\" processed in %s", msg.RoutingKey, time.Since(start))
 		}()
-		next(ctx, ch, msg)
+		next(ctx, msg)
 	}
 }

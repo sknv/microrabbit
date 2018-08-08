@@ -8,7 +8,7 @@ import (
 	"github.com/streadway/amqp"
 )
 
-type HandlerFunc func(context.Context, *Channel, *amqp.Delivery)
+type HandlerFunc func(context.Context, *amqp.Delivery)
 
 type Server struct {
 	Conn *amqp.Connection
@@ -111,7 +111,7 @@ func (e *serverEntry) serveAsync() {
 }
 
 func (e *serverEntry) handleMessage(message *amqp.Delivery) {
-	e.handler(context.Background(), e.channel, message)
+	e.handler(context.Background(), message)
 	if !e.autoAck {
 		message.Ack(false)
 	}
