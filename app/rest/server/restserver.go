@@ -28,6 +28,7 @@ func NewRestServer(rconn *amqp.Connection) *RestServer {
 func (s *RestServer) Route(router chi.Router) {
 	router.Route("/math", func(r chi.Router) {
 		r.Get("/circle", s.Circle)
+		r.Get("/rect", s.Rect)
 	})
 }
 
@@ -43,6 +44,24 @@ func (s *RestServer) Circle(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	reply, err := s.mathClient.Circle(ctx, &args)
+	abortOnError(w, err)
+	render.JSON(w, r, reply)
+}
+
+func (s *RestServer) Rect(w http.ResponseWriter, r *http.Request) {
+	queryParams := r.URL.Query()
+	width := parseFloat(w, queryParams.Get("w"))
+	height := parseFloat(w, queryParams.Get("h"))
+	args := math.RectArgs{
+		Width:  width,
+		Height: height,
+	}
+
+	// set the reply timeout
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	reply, err := s.mathClient.Rect(ctx, &args)
 	abortOnError(w, err)
 	render.JSON(w, r, reply)
 }

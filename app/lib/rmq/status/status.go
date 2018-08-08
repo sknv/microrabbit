@@ -57,9 +57,9 @@ func Error(code statusCode, message string) *Status {
 }
 
 func FromError(err error) (*Status, bool) {
-	rerr, match := err.(*Status)
+	stat, match := err.(*Status)
 	if match {
-		return rerr, true
+		return stat, true
 	}
 	return Error(Internal, err.Error()), false
 }

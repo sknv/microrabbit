@@ -1,84 +1,125 @@
 package rmq
 
 import (
+	"context"
+	"log"
 	"sync"
 
-	"github.com/pkg/errors"
 	"github.com/streadway/amqp"
 )
 
-type ServerProc struct {
-	Channel  *Channel
-	Messages <-chan amqp.Delivery
-}
-
-func (p *ServerProc) Close() {
-	if p.Channel != nil {
-		p.Channel.Close()
-	}
-}
-
-// ----------------------------------------------------------------------------
-// ----------------------------------------------------------------------------
-// ----------------------------------------------------------------------------
+type HandlerFunc func(context.Context, *Channel, *amqp.Delivery)
 
 type Server struct {
 	Conn *amqp.Connection
 
-	mu    sync.RWMutex
-	procs map[string]*ServerProc
+	mu      sync.RWMutex
+	entries map[string]*serverEntry
 }
 
 func NewServer(conn *amqp.Connection) *Server {
 	return &Server{Conn: conn}
 }
 
-func (s *Server) Handle(pattern string, durable, autoAck bool) (*ServerProc, error) {
+func (s *Server) Handle(pattern string, autoAck, durable bool, channelLimit int, handler HandlerFunc) {
 	if pattern == "" {
-		return nil, errors.New("rmq: pattern must be present")
+		panic("rmq: invalid pattern")
 	}
 
-	// work with server is thread-safe
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if _, exist := s.procs[pattern]; exist {
-		return nil, errors.New("rmq: multiple registrations for " + pattern)
+	if _, exist := s.entries[pattern]; exist {
+		panic("rmq: multiple registrations for " + pattern)
 	}
 
-	// open a channel per a pattern
-	ch, err := NewChannel(s.Conn)
+	if s.entries == nil {
+		s.entries = make(map[string]*serverEntry)
+	}
+	s.entries[pattern] = newServerEntry(s.Conn, pattern, autoAck, durable, channelLimit, handler)
+}
+
+func (s *Server) ServeAsync() {
+	for _, entry := range s.entries {
+		entry.serveAsync()
+	}
+	log.Print("[INFO] rmq server started")
+}
+
+func (s *Server) Stop() {
+	for _, entry := range s.entries {
+		entry.stop()
+	}
+	log.Print("[INFO] rmq server stopped")
+}
+
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+
+type serverEntry struct {
+	channel *Channel
+	autoAck bool
+	handler HandlerFunc
+	msgs    <-chan amqp.Delivery
+	done    chan struct{}
+}
+
+func newServerEntry(
+	conn *amqp.Connection, pattern string, autoAck, durable bool, channelLimit int, handler HandlerFunc,
+) *serverEntry {
+	ch, err := NewChannel(conn)
 	if err != nil {
-		return nil, errors.WithMessage(err, "failed to open a channel for the server")
+		panic("rmq: failed to open a channel for the server entry")
 	}
 
-	// declare a queue
 	queue, err := ch.DeclareQueue(pattern, durable)
 	if err != nil {
-		ch.Close() // close the channel opened for this pattern now
-		return nil, errors.WithMessage(err, "failed to declare a queue for the server")
+		panic("rmq: failed to declare a queue for the server entry")
+	}
+
+	if err = ch.QoS(channelLimit); err != nil {
+		panic("rmq: failed to set QoS for the server entry")
 	}
 
 	msgs, err := ch.Consume(queue.Name, autoAck)
 	if err != nil {
-		ch.Close() // close the channel opened for this pattern now
-		return nil, errors.WithMessage(err, "failed to register a consumer for the server")
+		panic("rmq: failed to consume a queue for the server entry")
 	}
 
-	// if all is ok, store the proc to close it later
-	if s.procs == nil {
-		s.procs = make(map[string]*ServerProc)
+	return &serverEntry{
+		channel: ch,
+		autoAck: autoAck,
+		handler: handler,
+		msgs:    msgs,
+		done:    make(chan struct{}),
 	}
-	srvProc := &ServerProc{
-		Channel:  ch,
-		Messages: msgs,
-	}
-	s.procs[pattern] = srvProc
-	return srvProc, nil
 }
 
-func (s *Server) Stop() {
-	for _, proc := range s.procs {
-		proc.Close()
+func (e *serverEntry) serveAsync() {
+	go func() {
+		run := true
+		for run {
+			select {
+			case msg := <-e.msgs:
+				go e.handleMessage(&msg)
+			case <-e.done:
+				run = false
+			}
+		}
+	}()
+}
+
+func (e *serverEntry) handleMessage(message *amqp.Delivery) {
+	e.handler(context.Background(), e.channel, message)
+	if !e.autoAck {
+		message.Ack(false)
+	}
+}
+
+func (e *serverEntry) stop() {
+	e.done <- struct{}{}
+	if e.channel != nil {
+		e.channel.Close()
 	}
 }

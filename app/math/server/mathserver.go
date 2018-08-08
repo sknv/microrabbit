@@ -1,76 +1,97 @@
 package server
 
-// import (
-// 	"context"
-// 	"log"
+import (
+	"context"
+	"log"
+	"time"
 
-// 	"github.com/pkg/errors"
-// 	"github.com/streadway/amqp"
+	"github.com/streadway/amqp"
 
-// 	"github.com/sknv/microrabbit/app/lib/rmq"
-// 	"github.com/sknv/microrabbit/app/math/rpc"
-// )
+	"github.com/golang/protobuf/proto"
+	"github.com/sknv/microrabbit/app/lib/rmq"
+	"github.com/sknv/microrabbit/app/math/rpc"
+)
 
-// type MathServer struct {
-// 	*rmq.Server
+func RegisterMathServer(rmqServer *rmq.Server, math rpc.Math) {
+	mathServer := newMathServer(rmqServer.Conn, math)
+	mathServer.route(rmqServer)
+}
 
-// 	math Math
-// 	done chan struct{}
-// }
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 
-// func NewMathServer(rconn *amqp.Connection) *MathServer {
-// 	return &MathServer{
-// 		Server: rmq.NewServer(rconn),
-// 		math:   Math{},
-// 		done:   make(chan struct{}),
+type mathServer struct {
+	rconn *amqp.Connection
+	math  rpc.Math
+	// publisher *rmq.ProtoPublisher
+}
+
+func newMathServer(rconn *amqp.Connection, math rpc.Math) *mathServer {
+	return &mathServer{
+		rconn: rconn,
+		math:  math,
+		// publisher: rmq.NewProtoPublisher(rmqConn),
+	}
+}
+
+// map a request to a pattern
+func (s *mathServer) route(rmqServer *rmq.Server) {
+	rmqServer.Handle(rpc.CirclePattern, false, false, 0, withLogger(s.circle))
+	// rmqServer.Handle(rpc.RectPattern, false, false, 0, withLogger(s.rect))
+}
+
+func (s *mathServer) circle(ctx context.Context, channel *rmq.Channel, message *amqp.Delivery) {
+	args := new(rpc.CircleArgs)
+	if err := proto.Unmarshal(message.Body, args); err != nil {
+		panic(err) // todo: return error
+	}
+
+	reply, err := s.math.Circle(ctx, args)
+	if err != nil {
+		panic(err) // todo: return error
+	}
+
+	data, err := proto.Marshal(reply)
+	if err != nil {
+		panic(err) // todo: return error
+	}
+
+	publish := &amqp.Publishing{
+		CorrelationId: message.CorrelationId,
+		Body:          data,
+	}
+	if err = channel.Publish("", message.ReplyTo, publish); err != nil {
+		panic(err) // todo: return error
+	}
+}
+
+// func (s *mathServer) rect(ctx context.Context, message *rmq.Msg) {
+// 	args := new(rpc.RectArgs)
+// 	if err := proto.Unmarshal(message.Data, args); err != nil {
+// 		panic(err) // todo: return error
 // 	}
-// }
 
-// func (s *MathServer) ServeAsync() error {
-// 	// register method handlers here
-// 	//
-// 	circleProc, err := s.Handle(rpc.CirclePattern, false, false)
+// 	reply, err := s.math.Rect(ctx, args)
 // 	if err != nil {
-// 		return errors.WithMessage(err, "failed to consume the circle pattern")
-// 	}
-// 	rectProc, err := s.Handle(rpc.RectPattern, false, false)
-// 	if err != nil {
-// 		return errors.WithMessage(err, "failed to consume the rect pattern")
+// 		panic(err) // todo: return error
 // 	}
 
-// 	// base context
-// 	ctx := context.Background()
-
-// 	// listen for messages in a goroutine
-// 	//
-// 	go func() {
-// 		run := true
-// 		for run {
-// 			select {
-// 			case circleMsg := <-circleProc.Messages:
-// 				s.handleCircle(ctx, circleProc.Channel, &circleMsg)
-// 			case rectMsg := <-rectProc.Messages:
-// 				s.handleCircle(ctx, rectProc.Channel, &rectMsg)
-// 			case <-s.done:
-// 				run = false
-// 			}
-// 		}
-// 	}()
-
-// 	log.Print("[INFO] starting a math server")
-// 	return nil
+// 	if err = s.publisher.Publish(message.Reply, reply); err != nil {
+// 		panic(err) // todo: return error
+// 	}
 // }
 
-// func (s *MathServer) Stop() {
-// 	s.done <- struct{}{}
-// 	s.Server.Stop()
-// 	log.Print("[INFO] math server stopped")
-// }
+// ----------------------------------------------------------------------------
+// middleware example
+// ----------------------------------------------------------------------------
 
-// // ----------------------------------------------------------------------------
-// // ----------------------------------------------------------------------------
-// // ----------------------------------------------------------------------------
-
-// func (s *MathServer) handleCircle(ctx context.Context, channel *rmq.Channel, message *amqp.Delivery) {
-
-// }
+func withLogger(next rmq.HandlerFunc) rmq.HandlerFunc {
+	return func(ctx context.Context, ch *rmq.Channel, msg *amqp.Delivery) {
+		start := time.Now()
+		defer func() {
+			log.Printf("[INFO] request \"%s\" processed in %s", msg.RoutingKey, time.Since(start))
+		}()
+		next(ctx, ch, msg)
+	}
+}

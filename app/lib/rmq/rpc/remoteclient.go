@@ -54,8 +54,8 @@ func (c *RemoteClient) Call(ctx context.Context, method string, message *amqp.Pu
 func prepareMessage(ctx context.Context, message *amqp.Publishing, correlationID, replyTo string) *amqp.Publishing {
 	message.CorrelationId = correlationID
 	message.ReplyTo = replyTo
-	message = expireIfNeeded(ctx, message)     // expire a message if a deadline specified for the context
-	message = addHeadersIfNeeded(ctx, message) // add headers table if one exists in the context
+	message = expireIfNeeded(ctx, message)  // expire a message if a deadline specified for the context
+	message = addMetaIfNeeded(ctx, message) // add metadata to the message if exist in the context
 	return message
 }
 
@@ -65,18 +65,18 @@ func expireIfNeeded(ctx context.Context, message *amqp.Publishing) *amqp.Publish
 		return message
 	}
 
-	exp := timeout.Seconds() * 1000 // expiration in ms
+	exp := int(timeout.Seconds() * 1000) // expiration in ms
 	message.Expiration = fmt.Sprint(exp)
 	return message
 }
 
-func addHeadersIfNeeded(ctx context.Context, message *amqp.Publishing) *amqp.Publishing {
-	headers, exist := Headers(ctx)
+func addMetaIfNeeded(ctx context.Context, message *amqp.Publishing) *amqp.Publishing {
+	meta, exist := Meta(ctx)
 	if !exist {
 		return message
 	}
 
-	message.Headers = headers
+	message.Headers = meta
 	return message
 }
 

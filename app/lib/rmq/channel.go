@@ -1,8 +1,6 @@
 package rmq
 
 import (
-	"fmt"
-
 	"github.com/pkg/errors"
 	"github.com/streadway/amqp"
 )
@@ -31,9 +29,6 @@ func (c *Channel) DeclareQueue(name string, durable bool) (amqp.Queue, error) {
 }
 
 func (c *Channel) QoS(prefetchCount int) error {
-	if prefetchCount < 1 {
-		return fmt.Errorf("invalid prefetch count: %d", prefetchCount)
-	}
 	return c.Qos(
 		prefetchCount, // prefetch count
 		0,             // prefetch size

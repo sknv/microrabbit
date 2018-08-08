@@ -3,8 +3,10 @@ package main
 import (
 	"github.com/streadway/amqp"
 
+	"github.com/sknv/microrabbit/app/lib/rmq"
 	"github.com/sknv/microrabbit/app/lib/xos"
 	"github.com/sknv/microrabbit/app/math/cfg"
+	"github.com/sknv/microrabbit/app/math/server"
 )
 
 func main() {
@@ -15,17 +17,14 @@ func main() {
 	xos.FailOnError(err, "failed to connect to RabbitMQ")
 	defer rconn.Close()
 
-	// // start the rmq server and schedule a stop
-	// srv := server.NewMathServer(rconn)
-	// xos.FailOnError(srv.ServeAsync(), "failed to start a math server")
-	// defer srv.Stop()
+	// handle rmq requests
+	srv := rmq.NewServer(rconn)
+	server.RegisterMathServer(srv, &server.MathImpl{})
 
-	// // handle nats requests
-	// natsServer := xnats.NewServer(natsConn)
-	// server.RegisterMathServer(natsServer, &server.MathImpl{})
+	// start the rmq server and schedule a stop
+	srv.ServeAsync()
+	defer srv.Stop()
 
-	// log.Print("[INFO] math service started")
-	// defer log.Print("[INFO] math service stopped")
-
+	// wait for a program exit to stop the rmq server
 	xos.WaitForExit()
 }

@@ -31,7 +31,7 @@ func (c *ProtoClient) Call(ctx context.Context, method string, args proto.Messag
 	}
 
 	// handle an error transfered over the network
-	if status.HasError(msg) {
+	if HasError(msg) {
 		rerr := new(status.Status)
 		if err = proto.Unmarshal(msg.Body, rerr); err != nil {
 			return errors.WithMessage(err, "failed to unmarshal an error from protobuf")
