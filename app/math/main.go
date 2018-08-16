@@ -5,7 +5,7 @@ import (
 	"github.com/sknv/microrabbit/app/lib/rmq/interceptors"
 	"github.com/sknv/microrabbit/app/lib/xos"
 	"github.com/sknv/microrabbit/app/math/cfg"
-	"github.com/sknv/microrabbit/app/math/server"
+	math "github.com/sknv/microrabbit/app/math/server"
 )
 
 func main() {
@@ -18,7 +18,7 @@ func main() {
 
 	// handle rmq requests
 	srv := rmq.NewServer(conn, interceptors.WithLogger)
-	server.RegisterMathServer(srv, &server.MathImpl{})
+	math.RegisterMathServer(srv, &math.MathImpl{})
 
 	// start the rmq server and schedule a stop
 	srv.ServeAsync()

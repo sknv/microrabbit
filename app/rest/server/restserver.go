@@ -43,8 +43,11 @@ func (s *RestServer) circle(w http.ResponseWriter, r *http.Request) {
 		Radius: radius,
 	}
 
+	// add sample metadata
+	ctx := rmq.ContextWithMetaValue(context.Background(), "foo", "bar")
+
 	// set the reply timeout
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
 
 	reply, err := s.mathClient.Circle(ctx, &args)

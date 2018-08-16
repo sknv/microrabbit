@@ -20,6 +20,9 @@ func NewRemoteClient(conn *rmq.Connection) *RemoteClient {
 }
 
 func (c *RemoteClient) Call(ctx context.Context, method string, message *amqp.Publishing) (*amqp.Delivery, error) {
+	// add the metadata from the context
+	message = rmq.WithMetadata(message, rmq.ContextMetadata(ctx))
+
 	reply, err := c.Conn.Request(ctx, method, message)
 	if err != nil { // handle network errors
 		cause := errors.Cause(err)

@@ -126,8 +126,14 @@ func (e *serverEntry) handleMessageAsync(message *amqp.Delivery) {
 			}
 		}()
 
-		// todo: fill the context with metadata
+		// fill the context with the metadata
 		ctx := context.Background()
+		metadata := Metadata(message)
+		if metadata != nil {
+			for key, val := range metadata {
+				ctx = ContextWithMetaValue(ctx, key, val)
+			}
+		}
 
 		// execute the interceptors
 		handlerFn := e.chainInterceptors(e.handlerFn)
