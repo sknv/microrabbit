@@ -20,7 +20,7 @@ func NewRemoteClient(conn *rmq.Connection) *RemoteClient {
 }
 
 func (c *RemoteClient) Call(ctx context.Context, method string, message *amqp.Publishing) (*amqp.Delivery, error) {
-	reply, err := c.Conn.Request(ctx, "", method, message)
+	reply, err := c.Conn.Request(ctx, method, message)
 	if err != nil { // handle network errors
 		cause := errors.Cause(err)
 		if cause == context.DeadlineExceeded { // handle timeout error if such exist

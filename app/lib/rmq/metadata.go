@@ -1,16 +1,14 @@
-package rpc
+package rmq
 
 import (
 	"github.com/streadway/amqp"
 )
 
-type responseCode uint16
-
 const (
 	responseCodeKey = "rmq.responseCode"
 
-	responseOK    responseCode = 0
-	responseError responseCode = 1
+	responseOK    int16 = 0
+	responseError int16 = 1
 )
 
 func HasError(message *amqp.Delivery) bool {
@@ -26,6 +24,9 @@ func HasError(message *amqp.Delivery) bool {
 }
 
 func WithError(message *amqp.Publishing) *amqp.Publishing {
+	if message.Headers == nil {
+		message.Headers = make(amqp.Table)
+	}
 	message.Headers[responseCodeKey] = responseError
 	return message
 }

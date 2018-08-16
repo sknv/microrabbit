@@ -49,7 +49,7 @@ func (c *Connection) Publish(exchange, routingKey string, message *amqp.Publishi
 	return nil
 }
 
-func (c *Connection) Request(ctx context.Context, exchange, routingKey string, message *amqp.Publishing) (*amqp.Delivery, error) {
+func (c *Connection) Request(ctx context.Context, routingKey string, message *amqp.Publishing) (*amqp.Delivery, error) {
 	ch, err := c.OpenChannel()
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to open a sync channel")
@@ -67,7 +67,7 @@ func (c *Connection) Request(ctx context.Context, exchange, routingKey string, m
 	}
 
 	// publish the message
-	if err = ch.PublishTo(exchange, routingKey, msg); err != nil {
+	if err = ch.PublishTo("", routingKey, msg); err != nil {
 		return nil, errors.WithMessage(err, fmt.Sprintf("failed to publish the sync message to %s", routingKey))
 	}
 	return handleReply(ctx, msgs, correlationID) // wait for the reply

@@ -79,7 +79,7 @@ func newServerEntry(conn *Connection, pattern string, handlerFn HandlerFunc, int
 
 	queue, err := ch.DeclareQueue(pattern, false)
 	if err != nil {
-		log.Fatal("rmq: failed to declare a queue for the server entry: ")
+		log.Fatal("rmq: failed to declare a queue for the server entry")
 	}
 
 	msgs, err := ch.ConsumeFrom(queue.Name, true)
