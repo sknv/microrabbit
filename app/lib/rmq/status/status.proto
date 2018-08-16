@@ -1,9 +1,9 @@
 syntax = "proto3";
 
-// protoc --go_out=. *.proto
+// protoc --go_out=${GOPATH}/src *.proto
 
 package rmq.status;
-option go_package = "status";
+option go_package = "github.com/sknv/microrabbit/app/lib/rmq/status";
 
 message Status {
   uint32 code = 1;

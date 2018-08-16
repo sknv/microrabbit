@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/sknv/microrabbit/app/lib/rmq"
+	"github.com/sknv/microrabbit/app/lib/rmq/interceptors"
 	"github.com/sknv/microrabbit/app/lib/xos"
 	"github.com/sknv/microrabbit/app/math/cfg"
 	"github.com/sknv/microrabbit/app/math/server"
@@ -11,12 +12,12 @@ func main() {
 	cfg := cfg.Parse()
 
 	// connect to RabbitMQ
-	rconn, err := rmq.Dial(cfg.RabbitAddr)
+	conn, err := rmq.Dial(cfg.RabbitAddr)
 	xos.FailOnError(err, "failed to connect to RabbitMQ")
-	defer rconn.Close()
+	defer conn.Close()
 
 	// handle rmq requests
-	srv := rmq.NewServer(rconn)
+	srv := rmq.NewServer(conn, interceptors.WithLogger)
 	server.RegisterMathServer(srv, &server.MathImpl{})
 
 	// start the rmq server and schedule a stop

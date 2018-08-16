@@ -20,11 +20,11 @@ func NewServer(addr string, handler http.Handler) *Server {
 }
 
 func (s *Server) ListenAndServeAsync() {
-	log.Print("[INFO] starting an http server on ", s.Addr)
+	log.Print("[INFO] starting the http server on ", s.Addr)
 	go func() {
 		if err := s.ListenAndServe(); err != nil {
 			// cannot panic, because this probably is an intentional close
-			log.Print("[ERROR] failed to serve an http server: ", err)
+			log.Print("[ERROR] failed to serve the http server: ", err)
 		}
 	}()
 }

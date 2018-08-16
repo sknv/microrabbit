@@ -8,35 +8,41 @@ import (
 	"github.com/streadway/amqp"
 )
 
-type HandlerFunc func(context.Context, *amqp.Delivery)
+type HandlerFunc func(context.Context, *amqp.Delivery) error
+
+type ServerInterceptor func(HandlerFunc) HandlerFunc
 
 type Server struct {
-	Conn *Connection
+	Conn         *Connection
+	Interceptors []ServerInterceptor
 
 	mu      sync.RWMutex
 	entries map[string]*serverEntry
 }
 
-func NewServer(conn *Connection) *Server {
-	return &Server{Conn: conn}
+func NewServer(conn *Connection, interceptors ...ServerInterceptor) *Server {
+	return &Server{
+		Conn:         conn,
+		Interceptors: interceptors,
+	}
 }
 
-func (s *Server) Handle(pattern string, autoAck, durable bool, channelLimit int, handler HandlerFunc) {
+func (s *Server) Handle(pattern string, handlerFn HandlerFunc) {
 	if pattern == "" {
-		panic("rmq: invalid pattern")
+		log.Fatal("rmq: invalid pattern")
 	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	if _, exist := s.entries[pattern]; exist {
-		panic("rmq: multiple registrations for " + pattern)
+		log.Fatal("rmq: multiple registrations for " + pattern)
 	}
 
 	if s.entries == nil {
 		s.entries = make(map[string]*serverEntry)
 	}
-	s.entries[pattern] = newServerEntry(s.Conn, pattern, autoAck, durable, channelLimit, handler)
+	s.entries[pattern] = newServerEntry(s.Conn, pattern, handlerFn, s.Interceptors)
 }
 
 func (s *Server) ServeAsync() {
@@ -58,41 +64,35 @@ func (s *Server) Stop() {
 // ----------------------------------------------------------------------------
 
 type serverEntry struct {
-	channel *Channel
-	autoAck bool
-	handler HandlerFunc
-	msgs    <-chan amqp.Delivery
-	done    chan struct{}
+	channel      *Channel
+	handlerFn    HandlerFunc
+	interceptors []ServerInterceptor
+	msgs         <-chan amqp.Delivery
+	closed       chan struct{}
 }
 
-func newServerEntry(
-	conn *Connection, pattern string, autoAck, durable bool, channelLimit int, handler HandlerFunc,
-) *serverEntry {
+func newServerEntry(conn *Connection, pattern string, handlerFn HandlerFunc, interceptors []ServerInterceptor) *serverEntry {
 	ch, err := conn.OpenChannel()
 	if err != nil {
-		panic("rmq: failed to open a channel for the server entry")
+		log.Fatal("rmq: failed to open a channel for the server entry")
 	}
 
-	queue, err := ch.DeclareQueue(pattern, durable)
+	queue, err := ch.DeclareQueue(pattern, false)
 	if err != nil {
-		panic("rmq: failed to declare a queue for the server entry")
+		log.Fatal("rmq: failed to declare a queue for the server entry: ")
 	}
 
-	if err = ch.QoS(channelLimit); err != nil {
-		panic("rmq: failed to set QoS for the server entry")
-	}
-
-	msgs, err := ch.ConsumeFrom(queue.Name, autoAck)
+	msgs, err := ch.ConsumeFrom(queue.Name, true)
 	if err != nil {
-		panic("rmq: failed to consume a queue for the server entry")
+		log.Fatal("rmq: failed to consume a queue for the server entry")
 	}
 
 	return &serverEntry{
-		channel: ch,
-		autoAck: autoAck,
-		handler: handler,
-		msgs:    msgs,
-		done:    make(chan struct{}),
+		channel:      ch,
+		handlerFn:    handlerFn,
+		interceptors: interceptors,
+		msgs:         msgs,
+		closed:       make(chan struct{}),
 	}
 }
 
@@ -102,24 +102,51 @@ func (e *serverEntry) serveAsync() {
 		for run {
 			select {
 			case msg := <-e.msgs:
-				go e.handleMessage(&msg)
-			case <-e.done:
+				e.handleMessageAsync(&msg)
+			case <-e.closed:
 				run = false
 			}
 		}
 	}()
 }
 
-func (e *serverEntry) handleMessage(message *amqp.Delivery) {
-	e.handler(context.Background(), message)
-	if !e.autoAck {
-		message.Ack(false)
-	}
-}
-
 func (e *serverEntry) stop() {
-	e.done <- struct{}{}
+	e.closed <- struct{}{}
 	if e.channel != nil {
 		e.channel.Close()
 	}
+}
+
+func (e *serverEntry) handleMessageAsync(message *amqp.Delivery) {
+	go func() { // process messages in a goroutine
+		// recover on panic
+		defer func() {
+			if rvr := recover(); rvr != nil {
+				log.Printf("[PANIC] recover: %s", rvr)
+			}
+		}()
+
+		// todo: fill the context with metadata
+		ctx := context.Background()
+
+		// execute the interceptors
+		handlerFn := e.chainInterceptors(e.handlerFn)
+
+		// call the handlerFn func
+		if err := handlerFn(ctx, message); err != nil {
+			log.Printf("[ERROR] failed to handle the message %s: %s", message.RoutingKey, err)
+		}
+	}()
+}
+
+func (e *serverEntry) chainInterceptors(endpoint HandlerFunc) HandlerFunc {
+	if len(e.interceptors) == 0 {
+		return endpoint
+	}
+
+	handler := e.interceptors[len(e.interceptors)-1](endpoint)
+	for i := len(e.interceptors) - 2; i >= 0; i-- {
+		handler = e.interceptors[i](handler)
+	}
+	return handler
 }

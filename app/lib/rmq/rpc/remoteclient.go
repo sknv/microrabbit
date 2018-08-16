@@ -24,7 +24,7 @@ func (c *RemoteClient) Call(ctx context.Context, method string, message *amqp.Pu
 	if err != nil { // handle network errors
 		cause := errors.Cause(err)
 		if cause == context.DeadlineExceeded { // handle timeout error if such exist
-			cause = status.Error(status.DeadlineExceeded, err.Error()) // save the original error message
+			cause = status.Error(status.DeadlineExceeded, err.Error())
 		}
 		return nil, errors.WithMessage(cause, fmt.Sprintf("failed to call %s", method))
 	}

@@ -57,9 +57,9 @@ func Error(code statusCode, message string) *Status {
 }
 
 func FromError(err error) (*Status, bool) {
-	stat, match := err.(*Status)
+	status, match := err.(*Status)
 	if match {
-		return stat, true
+		return status, true
 	}
 	return Error(Internal, err.Error()), false
 }
@@ -78,17 +78,11 @@ func (s *Status) MetaValue(key string) string {
 	return ""
 }
 
-func (s *Status) WithMeta(key string, value string) *Status {
-	newErr := &Status{
-		Code:    s.Code,
-		Message: s.Message,
-		Meta:    make(map[string]string, len(s.Meta)),
+func (s *Status) WithMeta(key string, value string) {
+	if s.Meta == nil {
+		s.Meta = make(map[string]string)
 	}
-	for key, val := range s.Meta { // copy existing map
-		newErr.Meta[key] = val
-	}
-	newErr.Meta[key] = value // upsert the value
-	return newErr
+	s.Meta[key] = value // upsert the value
 }
 
 func (s *Status) Error() string {

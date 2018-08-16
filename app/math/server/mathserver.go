@@ -2,8 +2,6 @@ package server
 
 import (
 	"context"
-	"log"
-	"time"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/streadway/amqp"
@@ -12,9 +10,9 @@ import (
 	"github.com/sknv/microrabbit/app/math/rpc"
 )
 
-func RegisterMathServer(rserver *rmq.Server, math rpc.Math) {
-	mathServer := newMathServer(rserver.Conn, math)
-	mathServer.route(rserver)
+func RegisterMathServer(server *rmq.Server, math rpc.Math) {
+	mathServer := newMathServer(server.Conn, math)
+	mathServer.route(server)
 }
 
 // ----------------------------------------------------------------------------
@@ -26,64 +24,51 @@ type mathServer struct {
 	publisher *rmq.ProtoPublisher
 }
 
-func newMathServer(rconn *rmq.Connection, math rpc.Math) *mathServer {
+func newMathServer(conn *rmq.Connection, math rpc.Math) *mathServer {
 	return &mathServer{
 		math:      math,
-		publisher: rmq.NewProtoPublisher(rconn),
+		publisher: rmq.NewProtoPublisher(conn),
 	}
 }
 
 // map a request to a pattern
-func (s *mathServer) route(rserver *rmq.Server) {
-	rserver.Handle(rpc.CirclePattern, false, false, 0, withLogger(s.circle))
-	rserver.Handle(rpc.RectPattern, false, false, 0, withLogger(s.rect))
+func (s *mathServer) route(server *rmq.Server) {
+	server.Handle(rpc.CirclePattern, s.circle)
+	server.Handle(rpc.RectPattern, s.rect)
 }
 
-func (s *mathServer) circle(ctx context.Context, message *amqp.Delivery) {
+func (s *mathServer) circle(ctx context.Context, message *amqp.Delivery) error {
 	args := new(rpc.CircleArgs)
 	if err := proto.Unmarshal(message.Body, args); err != nil {
-		panic(err) // todo: transfer error
+		return err
 	}
 
 	reply, err := s.math.Circle(ctx, args)
 	if err != nil {
-		panic(err) // todo: transfer error
+		return err
 	}
 
 	publish := &amqp.Publishing{CorrelationId: message.CorrelationId}
 	if err = s.publisher.Publish("", message.ReplyTo, reply, publish); err != nil {
-		panic(err) // todo: transfer error
+		return err
 	}
+	return nil
 }
 
-func (s *mathServer) rect(ctx context.Context, message *amqp.Delivery) {
+func (s *mathServer) rect(ctx context.Context, message *amqp.Delivery) error {
 	args := new(rpc.RectArgs)
 	if err := proto.Unmarshal(message.Body, args); err != nil {
-		panic(err) // todo: transfer error
+		return err
 	}
 
 	reply, err := s.math.Rect(ctx, args)
 	if err != nil {
-		panic(err) // todo: transfer error
+		return err
 	}
 
 	publish := &amqp.Publishing{CorrelationId: message.CorrelationId}
 	if err = s.publisher.Publish("", message.ReplyTo, reply, publish); err != nil {
-		panic(err) // todo: transfer error
+		return err
 	}
-}
-
-// ----------------------------------------------------------------------------
-// middleware example
-// ----------------------------------------------------------------------------
-
-func withLogger(next rmq.HandlerFunc) rmq.HandlerFunc {
-	fn := func(ctx context.Context, msg *amqp.Delivery) {
-		start := time.Now()
-		defer func() {
-			log.Printf("[INFO] request \"%s\" processed in %s", msg.RoutingKey, time.Since(start))
-		}()
-		next(ctx, msg)
-	}
-	return fn
+	return nil
 }

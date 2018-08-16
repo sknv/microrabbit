@@ -1,9 +1,9 @@
 syntax = "proto3";
 
-// protoc --go_out=. *.proto
+// protoc --go_out=${GOPATH}/src *.proto
 
 package math.rpc;
-option go_package = "rpc";
+option go_package = "github.com/sknv/microrabbit/app/math/rpc";
 
 message RectArgs {
   double width = 1;

@@ -21,8 +21,8 @@ type RestServer struct {
 	mathClient math.Math
 }
 
-func NewRestServer(rconn *rmq.Connection) *RestServer {
-	return &RestServer{mathClient: math.NewClient(rconn)}
+func NewRestServer(conn *rmq.Connection) *RestServer {
+	return &RestServer{mathClient: math.NewClient(conn)}
 }
 
 func (s *RestServer) Route(router chi.Router) {
