@@ -3,7 +3,6 @@ package rmq
 import (
 	"context"
 	"fmt"
-	"log"
 	"math"
 	"time"
 
@@ -21,17 +20,16 @@ const (
 
 type Connection struct {
 	*amqp.Connection
+
+	// mu sync.RWMutex
 }
 
 func Dial(addr string) (*Connection, error) {
-	conn, closed, err := connectToRabbit(addr)
+	conn, err := amqp.Dial(addr)
 	if err != nil {
 		return nil, err
 	}
-
-	rmqConn := &Connection{Connection: conn}
-	rmqConn.reconnectOnCloseAsync(addr, closed)
-	return rmqConn, nil
+	return &Connection{Connection: conn}, nil
 }
 
 func (c *Connection) OpenChannel() (*Channel, error) {
@@ -83,48 +81,51 @@ func (c *Connection) Request(ctx context.Context, routingKey string, message *am
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 
-func (c *Connection) reconnectOnCloseAsync(addr string, closed chan *amqp.Error) {
-	go func() {
-		for {
-			_, ok := <-closed
-			if !ok { // intentional close
-				return
-			}
+// func (c *Connection) reconnectOnCloseAsync(addr string, closed <-chan *amqp.Error) {
+// 	go func() {
+// 		for {
+// 			_, ok := <-closed
+// 			if !ok { // intentional close
+// 				return
+// 			}
 
-			newConn, newClosed := reconnectToRabbit(addr)
-			closed = newClosed     // replace the close channel
-			c.Connection = newConn // replace the connection
-		}
-	}()
-}
+// 			newConn, newClosed := reconnectToRabbit(addr)
+// 			closed = newClosed // replace the close channel
+
+// 			c.mu.Lock()
+// 			c.Connection = newConn // replace the connection
+// 			c.mu.Unlock()
+// 		}
+// 	}()
+// }
 
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 
-func connectToRabbit(addr string) (*amqp.Connection, chan *amqp.Error, error) {
-	conn, err := amqp.Dial(addr)
-	if err != nil {
-		return nil, nil, err
-	}
+// func connectToRabbit(addr string) (*amqp.Connection, <-chan *amqp.Error, error) {
+// 	conn, err := amqp.Dial(addr)
+// 	if err != nil {
+// 		return nil, nil, err
+// 	}
 
-	closed := make(chan *amqp.Error)
-	conn.NotifyClose(closed)
-	return conn, closed, nil
-}
+// 	closed := make(chan *amqp.Error)
+// 	conn.NotifyClose(closed)
+// 	return conn, closed, nil
+// }
 
-func reconnectToRabbit(addr string) (*amqp.Connection, chan *amqp.Error) {
-	for {
-		conn, closed, err := connectToRabbit(addr)
-		if err == nil {
-			log.Print("[INFO] reconnected to RabbitMQ")
-			return conn, closed
-		}
+// func reconnectToRabbit(addr string) (*amqp.Connection, <-chan *amqp.Error) {
+// 	for {
+// 		conn, closed, err := connectToRabbit(addr)
+// 		if err == nil {
+// 			log.Print("[INFO] reconnected to RabbitMQ")
+// 			return conn, closed
+// 		}
 
-		log.Print("[ERROR] failed to reconnect to RabbitMQ: ", err)
-		time.Sleep(reconnectTimeout)
-	}
-}
+// 		log.Print("[ERROR] failed to reconnect to RabbitMQ: ", err)
+// 		time.Sleep(reconnectTimeout)
+// 	}
+// }
 
 func prepareMessage(ctx context.Context, message *amqp.Publishing, correlationID string) *amqp.Publishing {
 	message.ReplyTo = directReplyQueue

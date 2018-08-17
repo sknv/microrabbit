@@ -16,7 +16,7 @@ type Server struct {
 	Conn         *Connection
 	Interceptors []ServerInterceptor
 
-	mu      sync.RWMutex
+	mu      sync.Mutex
 	entries map[string]*serverEntry
 }
 
