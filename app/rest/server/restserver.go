@@ -17,15 +17,15 @@ import (
 	math "github.com/sknv/microrabbit/app/math/rpc"
 )
 
-type RestServer struct {
+type restServer struct {
 	mathClient math.Math
 }
 
-func NewRestServer(conn *rmq.Connection) *RestServer {
-	return &RestServer{mathClient: math.NewClient(conn)}
+func NewRestServer(conn *rmq.Connection) *restServer {
+	return &restServer{mathClient: math.NewClient(conn)}
 }
 
-func (s *RestServer) Route(router chi.Router) {
+func (s *restServer) Route(router chi.Router) {
 	router.Route("/math", func(r chi.Router) {
 		r.Get("/circle", s.circle)
 		r.Get("/rect", s.rect)
@@ -36,7 +36,7 @@ func (s *RestServer) Route(router chi.Router) {
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 
-func (s *RestServer) circle(w http.ResponseWriter, r *http.Request) {
+func (s *restServer) circle(w http.ResponseWriter, r *http.Request) {
 	queryParams := r.URL.Query()
 	radius := parseFloat(w, queryParams.Get("r"))
 	args := math.CircleArgs{
@@ -55,7 +55,7 @@ func (s *RestServer) circle(w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, r, reply)
 }
 
-func (s *RestServer) rect(w http.ResponseWriter, r *http.Request) {
+func (s *restServer) rect(w http.ResponseWriter, r *http.Request) {
 	queryParams := r.URL.Query()
 	width := parseFloat(w, queryParams.Get("w"))
 	height := parseFloat(w, queryParams.Get("h"))

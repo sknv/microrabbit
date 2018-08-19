@@ -51,7 +51,7 @@ const (
 	responseCodeHeaderKey   = "rmq.responseCode"
 	metadataHeaderPrefixKey = "rmq.metadata."
 
-	responseOK    int16 = 0
+	responseOK    int16 = 0 // int16 is required by rabbit
 	responseError int16 = 1
 )
 

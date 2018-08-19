@@ -65,10 +65,10 @@ func (s *Server) Stop() {
 
 type serverEntry struct {
 	channel      *Channel
+	pattern      string
 	handlerFn    HandlerFunc
 	interceptors []ServerInterceptor
 	msgs         <-chan amqp.Delivery
-	closed       chan *amqp.Error
 }
 
 func newServerEntry(conn *Connection, pattern string, handlerFn HandlerFunc, interceptors []ServerInterceptor) *serverEntry {
@@ -76,10 +76,6 @@ func newServerEntry(conn *Connection, pattern string, handlerFn HandlerFunc, int
 	if err != nil {
 		log.Fatal("rmq: failed to open a channel for the server entry")
 	}
-
-	// prevent receiving error messages on channel close
-	closed := make(chan *amqp.Error)
-	ch.NotifyClose(closed)
 
 	queue, err := ch.DeclareQueue(pattern, false)
 	if err != nil {
@@ -93,29 +89,22 @@ func newServerEntry(conn *Connection, pattern string, handlerFn HandlerFunc, int
 
 	return &serverEntry{
 		channel:      ch,
+		pattern:      pattern,
 		handlerFn:    handlerFn,
 		interceptors: interceptors,
 		msgs:         msgs,
-		closed:       closed,
 	}
 }
 
 func (e *serverEntry) serveAsync() {
 	go func() {
-		run := true
-		for run {
-			select {
-			case <-e.closed:
-				run = false
-			case msg := <-e.msgs:
-				e.handleMessageAsync(&msg)
-			}
+		for msg := range e.msgs {
+			e.handleMessageAsync(&msg)
 		}
 	}()
 }
 
 func (e *serverEntry) stop() {
-	e.closed <- amqp.ErrClosed
 	if e.channel != nil {
 		e.channel.Close()
 	}

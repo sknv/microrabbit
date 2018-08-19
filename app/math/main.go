@@ -12,7 +12,7 @@ func main() {
 	cfg := cfg.Parse()
 
 	// connect to RabbitMQ
-	conn, err := rmq.Dial(cfg.RabbitAddr)
+	conn, err := rmq.DialWithReconnect(cfg.RabbitAddr)
 	xos.FailOnError(err, "failed to connect to RabbitMQ")
 	defer conn.Close()
 
