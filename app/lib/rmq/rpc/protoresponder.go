@@ -17,7 +17,10 @@ func NewProtoResponder(conn *rmq.Connection) *ProtoResponder {
 }
 
 func (r *ProtoResponder) Reply(request *amqp.Delivery, reply proto.Message, err error) error {
-	publish := &amqp.Publishing{CorrelationId: request.CorrelationId}
+	publish := &amqp.Publishing{
+		CorrelationId: request.CorrelationId,
+		Expiration:    request.Expiration, // do not store expired messages
+	}
 	if err == nil {
 		return r.Publish("", request.ReplyTo, publish, reply)
 	}
