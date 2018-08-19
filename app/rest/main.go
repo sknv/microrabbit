@@ -32,8 +32,7 @@ func main() {
 	xchi.UseThrottle(router, concurrentRequestLimit)
 
 	// handle requests
-	rest := server.NewRestServer(conn)
-	rest.Route(router)
+	server.RegisterRestServer(conn, router)
 
 	// handle health check requests
 	var health xhttp.HealthServer

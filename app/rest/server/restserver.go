@@ -17,24 +17,29 @@ import (
 	math "github.com/sknv/microrabbit/app/math/rpc"
 )
 
+func RegisterRestServer(conn *rmq.Connection, router chi.Router) {
+	restServer := newRestServer(conn)
+	restServer.route(router)
+}
+
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+
 type restServer struct {
 	mathClient math.Math
 }
 
-func NewRestServer(conn *rmq.Connection) *restServer {
+func newRestServer(conn *rmq.Connection) *restServer {
 	return &restServer{mathClient: math.NewClient(conn)}
 }
 
-func (s *restServer) Route(router chi.Router) {
+func (s *restServer) route(router chi.Router) {
 	router.Route("/math", func(r chi.Router) {
 		r.Get("/circle", s.circle)
 		r.Get("/rect", s.rect)
 	})
 }
-
-// ----------------------------------------------------------------------------
-// ----------------------------------------------------------------------------
-// ----------------------------------------------------------------------------
 
 func (s *restServer) circle(w http.ResponseWriter, r *http.Request) {
 	queryParams := r.URL.Query()

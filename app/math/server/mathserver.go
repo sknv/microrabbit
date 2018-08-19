@@ -13,8 +13,8 @@ import (
 	math "github.com/sknv/microrabbit/app/math/rpc"
 )
 
-func RegisterMathServer(server *rmq.Server, math math.Math) {
-	mathServer := newMathServer(server.Conn, math)
+func RegisterMathServer(conn *rmq.Connection, server *rmq.Server, math math.Math) {
+	mathServer := newMathServer(conn, math)
 	mathServer.route(server)
 }
 
