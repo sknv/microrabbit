@@ -105,18 +105,19 @@ func (e *serverEntry) serveAsync() {
 		run := true
 		for run {
 			select {
-			case msg := <-e.msgs:
-				e.handleMessageAsync(&msg)
 			case <-e.closed:
 				run = false
+			case msg := <-e.msgs:
+				e.handleMessageAsync(&msg)
 			}
 		}
 	}()
 }
 
 func (e *serverEntry) stop() {
+	e.closed <- amqp.ErrClosed
 	if e.channel != nil {
-		e.channel.Close() // will also notify "closed" channel
+		e.channel.Close()
 	}
 }
 
