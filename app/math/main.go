@@ -5,20 +5,24 @@ import (
 	"github.com/sknv/microrabbit/app/lib/rmq/interceptors"
 	"github.com/sknv/microrabbit/app/lib/xos"
 	"github.com/sknv/microrabbit/app/math/cfg"
-	math "github.com/sknv/microrabbit/app/math/server"
+	"github.com/sknv/microrabbit/app/math/server"
 )
 
 func main() {
 	cfg := cfg.Parse()
 
 	// connect to RabbitMQ
-	conn, err := rmq.DialWithReconnect(cfg.RabbitAddr)
+	consumerConn, err := rmq.DialWithReconnect(cfg.RabbitAddr)
 	xos.FailOnError(err, "failed to connect to RabbitMQ")
-	defer conn.Close()
+	defer consumerConn.Close()
+
+	publisherConn, err := rmq.DialWithReconnect(cfg.RabbitAddr)
+	xos.FailOnError(err, "failed to connect to RabbitMQ")
+	defer publisherConn.Close()
 
 	// handle rmq requests
-	srv := rmq.NewServer(conn, interceptors.WithLogger)
-	math.RegisterMathServer(srv, &math.MathImpl{})
+	srv := rmq.NewServer(consumerConn, interceptors.WithLogger)
+	server.RegisterMathServer(publisherConn, srv, &server.MathImpl{})
 
 	// start the rmq server and schedule a stop
 	srv.ServeAsync()

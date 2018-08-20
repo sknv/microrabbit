@@ -16,6 +16,8 @@ import (
 const (
 	concurrentRequestLimit = 1000
 	serverShutdownTimeout  = 60 * time.Second
+
+	healthCheckURL = "/healthz"
 )
 
 func main() {
@@ -45,5 +47,5 @@ func main() {
 
 func registerHealthServer(router chi.Router) {
 	var health xhttp.HealthServer
-	router.Get("/healthz", health.Check)
+	router.Get(healthCheckURL, health.Check)
 }
