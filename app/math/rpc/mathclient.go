@@ -11,8 +11,8 @@ type MathClient struct {
 	*rpc.ProtoClient
 }
 
-func NewClient(conn *rmq.Connection) Math {
-	return &MathClient{ProtoClient: rpc.NewProtoClient(conn)}
+func NewClient(rmqConn *rmq.Connection) Math {
+	return &MathClient{ProtoClient: rpc.NewProtoClient(rmqConn)}
 }
 
 func (c *MathClient) Circle(ctx context.Context, args *CircleArgs) (*CircleReply, error) {

@@ -17,8 +17,8 @@ import (
 	math "github.com/sknv/microrabbit/app/math/rpc"
 )
 
-func RegisterRestServer(conn *rmq.Connection, router chi.Router) {
-	restServer := newRestServer(conn)
+func RegisterRestServer(rmqConn *rmq.Connection, router chi.Router) {
+	restServer := newRestServer(rmqConn)
 	restServer.route(router)
 }
 
@@ -30,8 +30,8 @@ type restServer struct {
 	mathClient math.Math
 }
 
-func newRestServer(conn *rmq.Connection) *restServer {
-	return &restServer{mathClient: math.NewClient(conn)}
+func newRestServer(rmqConn *rmq.Connection) *restServer {
+	return &restServer{mathClient: math.NewClient(rmqConn)}
 }
 
 func (s *restServer) route(router chi.Router) {

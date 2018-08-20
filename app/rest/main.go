@@ -16,27 +16,25 @@ import (
 const (
 	concurrentRequestLimit = 1000
 	serverShutdownTimeout  = 60 * time.Second
+
+	healthCheckURL = "/healthz"
 )
 
 func main() {
 	cfg := cfg.Parse()
 
 	// connect to RabbitMQ
-	conn, err := rmq.DialWithReconnect(cfg.RabbitAddr)
+	rmqConn, err := rmq.DialWithReconnect(cfg.RabbitAddr)
 	xos.FailOnError(err, "failed to connect to RabbitMQ")
-	defer conn.Close()
+	defer rmqConn.Close()
 
 	// config the http router
 	router := chi.NewRouter()
 	xchi.UseDefaultMiddleware(router)
 	xchi.UseThrottle(router, concurrentRequestLimit)
 
-	// handle requests
-	server.RegisterRestServer(conn, router)
-
-	// handle health check requests
-	var health xhttp.HealthServer
-	router.Get("/healthz", health.Check)
+	server.RegisterRestServer(rmqConn, router) // handle requests
+	registerHealthServer(router)               // handle health check requests
 
 	// start the http server and schedule a stop
 	srv := xhttp.NewServer(cfg.Addr, router)
@@ -45,4 +43,9 @@ func main() {
 
 	// wait for a program exit to stop the http server
 	xos.WaitForExit()
+}
+
+func registerHealthServer(router chi.Router) {
+	var health xhttp.HealthServer
+	router.Get(healthCheckURL, health.Check)
 }

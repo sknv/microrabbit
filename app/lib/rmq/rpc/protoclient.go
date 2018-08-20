@@ -15,8 +15,8 @@ type ProtoClient struct {
 	*RemoteClient
 }
 
-func NewProtoClient(conn *rmq.Connection) *ProtoClient {
-	return &ProtoClient{RemoteClient: NewRemoteClient(conn)}
+func NewProtoClient(rmqConn *rmq.Connection) *ProtoClient {
+	return &ProtoClient{RemoteClient: NewRemoteClient(rmqConn)}
 }
 
 func (c *ProtoClient) Call(ctx context.Context, method string, args proto.Message, reply proto.Message) error {
